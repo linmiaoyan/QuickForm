@@ -1,0 +1,624 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ task.title }} - QuickForm{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between items-center mb-4">
+            <h2>{{ task.title }}</h2>
+            <div>
+                <a href="{{ url_for('quickform.export_data', task_id=task.id) }}" class="btn btn-success me-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                        <path d="M8 4a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0v-8A.5.5 0 0 1 8 4z"/>
+                        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0z"/>
+                    </svg>
+                    导出数据
+                </a>
+                <a href="{{ url_for('quickform.smart_analyze', task_id=task.id) }}" class="btn btn-info me-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart2" viewBox="0 0 16 16">
+                        <path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3zm5 2v8h2V5H6zm4 0v8h2V5h-2zm4 0v8h2V5h-2z"/>
+                    </svg>
+                    数据分析
+                </a>
+                <a href="{{ url_for('quickform.edit_task', task_id=task.id) }}" class="btn btn-primary me-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                        <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                    </svg>
+                    编辑任务
+                </a>
+                <a href="{{ url_for('quickform.dashboard') }}" class="btn btn-secondary">返回列表</a>
+            </div>
+        </div>
+        
+        <!-- 任务信息卡片 -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">任务信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>创建时间：</strong>{{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        <p><strong>提交数量：</strong>{{ total_submissions }}</p>
+                    </div>
+
+                </div>
+                {% if task.description %}
+                <div class="mt-3">
+                    <strong>任务描述：</strong>
+                    <p>{{ task.description }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <label class="form-label"><strong>HTML文件</strong></label>
+                    {% if task.file_name %}
+                    <div class="alert alert-success mb-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <strong>已上传文件：</strong>
+                                <a href="{{ url_for('quickform.uploaded_file', filename=saved_filename) }}" target="_blank" class="text-decoration-none">
+                                    {{ task.file_name }}
+                                </a>
+                            </div>
+                            {% if task.html_approved == 1 %}
+                            <div class="position-relative">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleQRCode(this)" data-url="{{ url_for('quickform.uploaded_file', filename=saved_filename, _external=True) }}">
+                                    📱 显示二维码
+                                </button>
+                                <div class="qr-code-container" id="qr-container-{{ task.id }}" style="display: none; position: relative; z-index: 10; background: white; padding: 16px; border: 1px solid #ddd; border-radius: 8px; margin-top: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); max-width: 360px;">
+                                    <div id="qrcode-{{ task.id }}" style="width: 360px; height: 360px;"></div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if task.html_approved == -1 %}
+                        <div class="alert alert-danger mt-2 mb-0" role="alert">
+                            页面审核结果：已被拒绝。原因：{{ task.html_review_note or '管理员未提供原因' }}。
+                        </div>
+                        {% elif task.html_approved != 1 %}
+                        <div class="alert alert-warning mt-2 mb-0" role="alert">
+                            页面正在审核中，暂时无法公开访问。审核不影响数据回收，本地浏览器打开网页就可以正常提交数据。在个人中心完成教师认证后，所有上传页面免审核。
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-2">
+                        <p class="mb-0">尚未上传HTML文件。如需上传，请前往 <a href="{{ url_for('quickform.edit_task', task_id=task.id) }}" class="alert-link">编辑任务</a> 页面。</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if task.rate_limit_log %}
+                <div class="mt-3">
+                    <div class="alert alert-warning" role="alert">
+                        <button class="btn btn-sm btn-outline-warning float-end" type="button" data-bs-toggle="collapse" data-bs-target="#rateLimitDetails" aria-expanded="false">
+                            <span class="badge bg-warning text-dark" id="rateLimitBadge">0</span> 条封禁记录 ▼
+                        </button>
+                        <strong>系统提醒：</strong> 检测到短时间内来自部分 IP 的异常提交，已自动暂时阻断。
+                        <div class="collapse mt-2" id="rateLimitDetails">
+                            <div id="rateLimitContent" class="bg-light border p-2 rounded" style="font-size: 0.9rem;"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- POST指令提示词卡片 -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-code-square" viewBox="0 0 16 16" style="margin-right: 8px;">
+                        <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+                        <path d="M6.854 4.646a.5.5 0 0 1 0 .708L4.207 8l2.647 2.646a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 0 1 .708 0zm2.292 0a.5.5 0 0 0 0 .708L11.793 8l-2.647 2.646a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708 0z"/>
+                    </svg>
+                    提交代码提示词
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">生成应用后，通过POST指令提交数据到以下URL：</p>
+                
+                <!-- URL显示 -->
+                <div class="mb-3">
+                    <label class="form-label"><strong>数据接口地址（URL）：</strong></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" readonly value="{{ request.host_url|replace('http://', 'https://') }}quickform/api/submit/{{ task.task_id }}" id="post-url">
+                        <button class="btn btn-outline-secondary" onclick="copyToClipboard('post-url')">📋 复制URL</button>
+                    </div>
+                </div>
+                
+                <!-- 提示词模板 -->
+                <div class="mb-3">
+                    <label class="form-label"><strong>精简版提示词（点击复制）：</strong></label>
+                    <div class="input-group">
+                        <textarea class="form-control" id="simple-prompt-text" rows="3" readonly style="font-family: 'Courier New', monospace; font-size: 13px;">创建完应用后，向 '{{ request.host_url|replace('http://', 'https://') }}quickform/api/submit/{{ task.task_id }}' 发送post格式的json数据</textarea>
+                        <button class="btn btn-outline-primary" onclick="copyToClipboardText('simple-prompt-text')">📋 复制</button>
+                    </div>
+                </div>
+                
+                <!-- GET方法说明 -->
+                <div class="alert alert-info mb-3">
+                    <strong>💡 数据查询功能：</strong>直接访问该网址就能看到已收集的数据，可以用它继续制作实时反馈排名页面。
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label mb-0"><strong>完整版提示词（默认折叠，点击展开/复制）：</strong></label>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#fullPromptCollapse" aria-expanded="false">展开/收起</button>
+                    </div>
+                    <div class="collapse" id="fullPromptCollapse">
+                        <div class="input-group">
+                            <textarea class="form-control" id="prompt-text" rows="15" readonly style="font-family: 'Courier New', monospace; font-size: 13px;">生成应用后，产生的数据用以下方法传到服务器：
+
+<script>
+function sendTestData() {
+    const url = '{{ request.host_url|replace('http://', 'https://') }}quickform/api/submit/{{ task.task_id }}';
+    const data = {"字段1": "值1", "字段2": "值2"};
+    document.getElementById('send-result').textContent = "提交中...";
+    fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
+    .then(async r => {
+        const text = await r.text();
+        let json = {};
+        try { json = JSON.parse(text); } catch(e) { json = {raw: text}; }
+        if (!r.ok) throw new Error(json.error || json.message || `HTTP ${r.status}`);
+        return json;
+    })
+    .then(d => {
+        document.getElementById('send-result').textContent = "提交成功: " + JSON.stringify(d);
+        document.getElementById('send-result').style.color = '#28a745';
+        console.log('提交成功:', d);
+    })
+    .catch(e => {
+        document.getElementById('send-result').textContent = "提交失败: " + e.message;
+        document.getElementById('send-result').style.color = '#dc3545';
+        console.error('提交失败:', e, 'URL:', url, 'Data:', data);
+    });
+}
+</script></textarea>
+                            <button class="btn btn-primary" onclick="copyToClipboardText('prompt-text')">📋 复制提示词</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 提交数据列表 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">提交数据列表</h5>
+                {% if submissions %}
+                <button type="button" class="btn btn-danger btn-sm" onclick="deleteAllData()">🗑 删除全部数据</button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if submissions %}
+                <div class="overflow-auto">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>提交时间</th>
+                                <th>数据内容</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sub in submissions %}
+                            <tr>
+                                <td>{{ sub.id }}</td>
+                                <td>{{ sub.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-link p-0"
+                                            data-sub-id="{{ sub.id }}"
+                                            data-sub-time="{{ sub.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}"
+                                            data-sub-data='{{ sub.data | tojson | safe }}'
+                                            onclick="openDataModal(this);">
+                                            查看数据
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-sm btn-danger"
+                                            onclick="deleteSingleData({{ sub.id }})">
+                                            🗑 删除
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 分页 -->
+                <div class="mt-4">
+                    <p class="text-center mb-2">共 {{ total_submissions }} 条记录</p>
+                    {% if pagination.pages > 1 %}
+                    {% set page_links = pagination.links if pagination.links is defined else range(1, pagination.pages + 1) %}
+                    <nav aria-label="提交数据分页">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {% if pagination.page <= 1 %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('quickform.task_detail', task_id=task.id, page=pagination.page - 1, per_page=pagination.per_page) }}" aria-label="上一页">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% for p in page_links %}
+                                {% if p == '...' or p == 'ellipsis' %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% else %}
+                                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.task_detail', task_id=task.id, page=p, per_page=pagination.per_page) }}">{{ p }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            <li class="page-item {% if pagination.page >= pagination.pages %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('quickform.task_detail', task_id=task.id, page=pagination.page + 1, per_page=pagination.per_page) }}" aria-label="下一页">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#6c757d" class="bi bi-database" viewBox="0 0 16 16">
+                            <path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
+                            <path d="M6.5 16a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-1H6.5v1zm-2-1a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-1H4.5v1z"/>
+                        </svg>
+                    </div>
+                    <h4>暂无提交数据</h4>
+                    <p class="text-muted mb-4">当用户通过表单提交数据后，将在这里显示</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/qrcode.min.js') }}"></script>
+<script>
+    // 拖拽上传处理函数
+    function toggleQRCode(btn) {
+        const container = btn.nextElementSibling;
+        const qrcodeDiv = container.querySelector('div[id^="qrcode-"]');
+        const url = btn.getAttribute('data-url');
+        
+        if (container.style.display === 'none' || container.style.display === '') {
+            container.style.display = 'block';
+            // 如果二维码还没有生成，则生成它
+            if (qrcodeDiv && !qrcodeDiv.hasAttribute('data-generated')) {
+                try {
+                    // 清空div内容（如果有的话）
+                    qrcodeDiv.innerHTML = '';
+                    // 使用更大的尺寸生成二维码
+                    new QRCode(qrcodeDiv, {
+                        text: url,
+                        width: 360,
+                        height: 360,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    qrcodeDiv.setAttribute('data-generated', 'true');
+                } catch (error) {
+                    console.error('生成二维码失败:', error);
+                    alert('生成二维码失败，请稍后重试');
+                    container.style.display = 'none';
+                }
+            }
+        } else {
+            container.style.display = 'none';
+        }
+    }
+    
+    // 点击外部关闭二维码
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.qr-code-container') && !e.target.closest('button[onclick*="toggleQRCode"]')) {
+            document.querySelectorAll('.qr-code-container').forEach(function(container) {
+                container.style.display = 'none';
+            });
+        }
+    });
+    
+    // 处理封禁通知显示
+    (function processRateLimitLog() {
+        const rateLimitLog = {{ task.rate_limit_log | tojson if task.rate_limit_log else 'null' }};
+        if (!rateLimitLog) return;
+        
+        const lines = rateLimitLog.split('\n').filter(l => l.trim());
+        const ipGroups = {};
+        const now = Math.floor(Date.now() / 1000);
+        const blacklistDuration = 600; // 10分钟
+        
+        lines.forEach(function(line) {
+            const match = line.match(/\[([^\]]+)\]\s*IP\s+([^\s]+)\s+在\s+(\d+)s\s+内多次提交，已暂时封禁\s+(\d+)\s+分钟/);
+            if (match) {
+                const timestamp = match[1];
+                const ip = match[2];
+                const windowSeconds = parseInt(match[3]);
+                const banMinutes = parseInt(match[4]);
+                
+                // 解析时间戳
+                const timeMatch = timestamp.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+                if (timeMatch) {
+                    const banTime = new Date(timestamp);
+                    const banTimestamp = Math.floor(banTime.getTime() / 1000);
+                    const expireTimestamp = banTimestamp + (banMinutes * 60);
+                    
+                    // 检查是否已过期
+                    if (expireTimestamp > now) {
+                        if (!ipGroups[ip]) {
+                            ipGroups[ip] = [];
+                        }
+                        ipGroups[ip].push({
+                            timestamp: timestamp,
+                            windowSeconds: windowSeconds,
+                            banMinutes: banMinutes,
+                            expireTimestamp: expireTimestamp
+                        });
+                    }
+                }
+            }
+        });
+        
+        const container = document.getElementById('rateLimitContent');
+        const badge = document.getElementById('rateLimitBadge');
+        if (!container) return;
+        
+        const activeCount = Object.keys(ipGroups).length;
+        if (badge) badge.textContent = activeCount;
+        
+        if (activeCount === 0) {
+            container.innerHTML = '<p class="text-muted mb-0">暂无活跃的封禁记录</p>';
+            return;
+        }
+        
+        let html = '';
+        Object.keys(ipGroups).forEach(function(ip) {
+            const records = ipGroups[ip];
+            const latest = records[records.length - 1];
+            const remainingSeconds = latest.expireTimestamp - now;
+            const remainingMinutes = Math.ceil(remainingSeconds / 60);
+            
+            html += '<div class="mb-2 p-2 border rounded">';
+            html += '<strong>IP: ' + ip + '</strong><br>';
+            html += '<small class="text-muted">封禁时间: ' + latest.timestamp + '</small><br>';
+            html += '<small class="text-danger">剩余时间: 约 ' + remainingMinutes + ' 分钟</small>';
+            if (records.length > 1) {
+                html += '<br><small class="text-muted">（该IP共有 ' + records.length + ' 条封禁记录）</small>';
+            }
+            html += '</div>';
+        });
+        
+        container.innerHTML = html;
+        
+        // 设置定时器，自动更新剩余时间
+        setInterval(function() {
+            const now = Math.floor(Date.now() / 1000);
+            const newIpGroups = {};
+            Object.keys(ipGroups).forEach(function(ip) {
+                const records = ipGroups[ip];
+                const latest = records[records.length - 1];
+                if (latest.expireTimestamp > now) {
+                    newIpGroups[ip] = records;
+                }
+            });
+            
+            if (Object.keys(newIpGroups).length !== Object.keys(ipGroups).length) {
+                // 有记录过期，重新渲染
+                processRateLimitLog();
+            } else {
+                // 更新剩余时间显示
+                const container = document.getElementById('rateLimitContent');
+                if (container) {
+                    let html = '';
+                    Object.keys(ipGroups).forEach(function(ip) {
+                        const records = ipGroups[ip];
+                        const latest = records[records.length - 1];
+                        const remainingSeconds = latest.expireTimestamp - now;
+                        const remainingMinutes = Math.ceil(remainingSeconds / 60);
+                        
+                        html += '<div class="mb-2 p-2 border rounded">';
+                        html += '<strong>IP: ' + ip + '</strong><br>';
+                        html += '<small class="text-muted">封禁时间: ' + latest.timestamp + '</small><br>';
+                        html += '<small class="text-danger">剩余时间: 约 ' + remainingMinutes + ' 分钟</small>';
+                        if (records.length > 1) {
+                            html += '<br><small class="text-muted">（该IP共有 ' + records.length + ' 条封禁记录）</small>';
+                        }
+                        html += '</div>';
+                    });
+                    container.innerHTML = html;
+                }
+            }
+        }, 60000); // 每分钟更新一次
+    })();
+    
+    window.copyToClipboard = function copyToClipboard(elementId) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        element.select();
+        element.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        
+        const btn = element.nextElementSibling;
+        if (!btn) return;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> 已复制';
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+        }, 2000);
+    };
+    
+    window.copyToClipboardText = function copyToClipboardText(containerId) {
+        const container = document.getElementById(containerId);
+        let textarea = null;
+        let button = null;
+
+        if (container) {
+            if (container.tagName && container.tagName.toLowerCase() === 'textarea') {
+                textarea = container;
+                button = container.nextElementSibling;
+            } else {
+                textarea = container.querySelector('textarea');
+                button = container.querySelector('button');
+            }
+        } else {
+            const element = document.getElementById(containerId);
+            if (element && element.tagName && element.tagName.toLowerCase() === 'textarea') {
+                textarea = element;
+                button = element.nextElementSibling;
+            }
+        }
+
+        if (!textarea) return;
+        textarea.select();
+        textarea.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        
+        const btn = button || (container ? container.querySelector('.btn-primary, .btn-success, .btn-outline-primary, .btn-outline-secondary') : null);
+        if (!btn) return;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 2.3 6.896a.235.235 0 0 0-.307.01l-.89.89a.5.5 0 0 0 .696.697l1.656-1.656a.235.235 0 0 0 .022-.023l3.473-4.425a.5.5 0 0 1 .703-.03l3.5 3.5a.5.5 0 0 1 .03.703z"/></svg> 已复制';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+        }, 2000);
+    };
+
+    // 单一全局模态框，避免滚动时出现多个悬浮窗
+    (function ensureSingleModal(){
+        if (document.getElementById('singleDataModal')) return;
+        const modalWrap = document.createElement('div');
+        modalWrap.id = 'singleDataModal';
+        modalWrap.style.cssText = 'display:none; position:fixed; inset:0; z-index:1050;';
+        modalWrap.innerHTML = `
+            <div style="position:fixed; inset:0; background:rgba(0,0,0,0.2);"></div>
+            <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); margin:0; display:flex; align-items:center; justify-content:center;">
+                <div class="modal-content" style="width:90%; height:90%; max-height:500px; max-width:900px; display:flex; flex-direction:column; background:white; margin:0; padding:0;">
+                    <div class="modal-header" style="padding:10px 15px; border-bottom:1px solid #dee2e6; margin:0;">
+                        <h5 id="singleDataModalTitle" class="modal-title" style="margin:0; font-size:16px;">提交数据详情</h5>
+                        <button type="button" class="btn" style="border:none; background:transparent; font-size:20px;" onclick="window.hideDataModal()" aria-label="Close">✖</button>
+                    </div>
+                    <div class="modal-body" style="padding:15px; flex-grow:1; overflow-y:auto; margin:0;">
+                        <p style="margin:0 0 10px 0; font-size:14px;"><strong>提交时间：</strong><span id="singleDataModalTime"></span></p>
+                        <div style="margin:0;">
+                            <h6 style="margin:0 0 8px 0; font-size:14px;">数据内容：</h6>
+                            <pre id="singleDataModalContent" class="bg-light p-3 rounded overflow-auto" style="font-size:16px; line-height:1.6; white-space:pre-wrap; word-wrap:break-word; margin:0; min-height:300px;"></pre>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="padding:10px 15px; border-top:1px solid #dee2e6; justify-content:flex-end; margin:0;">
+                        <button type="button" class="btn btn-secondary" onclick="window.hideDataModal()">关闭</button>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(modalWrap);
+        // 点击遮罩关闭
+        modalWrap.firstElementChild.addEventListener('click', window.hideDataModal);
+    })();
+
+    window.openDataModal = function openDataModal(btn){
+        const wrap = document.getElementById('singleDataModal');
+        if (!wrap) return;
+        const id = btn.getAttribute('data-sub-id') || '';
+        const t = btn.getAttribute('data-sub-time') || '';
+        let d = btn.getAttribute('data-sub-data') || '';
+        try { d = JSON.stringify(JSON.parse(d), null, 2); } catch(e) {}
+        document.getElementById('singleDataModalTitle').textContent = '提交数据详情 #' + id;
+        document.getElementById('singleDataModalTime').textContent = t;
+        document.getElementById('singleDataModalContent').textContent = d;
+        wrap.style.display = 'block';
+    };
+    window.hideDataModal = function hideDataModal(){
+        const wrap = document.getElementById('singleDataModal');
+        if (wrap) wrap.style.display = 'none';
+    };
+
+    // 删除单条数据
+    window.deleteSingleData = function deleteSingleData(subId) {
+        if (!confirm('确定要删除这条数据吗？此操作不可恢复。')) {
+            return;
+        }
+        
+        const baseUrl = `{{ url_for('quickform.remove_submission', task_id=task.id) }}?submission_id=${subId}`;
+        const url = baseUrl + `&_=${Date.now()}`;
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            cache: 'no-store'
+        })
+        .then(async response => {
+            const text = await response.text();
+            let data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch(e) { data = { message: text }; }
+            if (!response.ok) {
+                throw new Error(data.message || data.error || `HTTP ${response.status}`);
+            }
+            return data;
+        })
+        .then(data => {
+            if (data.success) {
+                alert('删除成功');
+                location.reload();
+            } else {
+                alert('删除失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败：' + error.message);
+        });
+    };
+    
+    // 删除全部数据
+    window.deleteAllData = function deleteAllData() {
+        if (!confirm('确定要删除所有数据吗？此操作不可恢复。')) {
+            return;
+        }
+        
+        const baseUrl = `{{ url_for('quickform.clear_all_submissions', task_id=task.id) }}`;
+        const url = baseUrl + `?_=${Date.now()}`;
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            cache: 'no-store'
+        })
+        .then(async response => {
+            const text = await response.text();
+            let data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch(e) { data = { message: text }; }
+            if (!response.ok) {
+                throw new Error(data.message || data.error || `HTTP ${response.status}`);
+            }
+            return data;
+        })
+        .then(data => {
+            if (data.success) {
+                alert('删除成功');
+                location.reload();
+            } else {
+                alert('删除失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败：' + error.message);
+        });
+    };
+</script>
+{% endblock %}
+{% endblock %}
