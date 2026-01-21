@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ translate('register.title') }} - QuickForm{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="text-center mb-0">{{ translate('register.header') }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('quickform.register') }}">
+                    <div class="mb-4">
+                        <label for="username" class="form-label">{{ translate('register.username') }} <span class="text-danger">{{ translate('register.required') }}</span></label>
+                        <input type="text" class="form-control" id="username" name="username" required placeholder="{{ translate('register.username_placeholder') }}" minlength="3" maxlength="20">
+                    </div>
+                    <div class="mb-4">
+                        <label for="email" class="form-label">{{ translate('register.email') }} <span class="text-danger">{{ translate('register.required') }}</span></label>
+                        <input type="email" class="form-control" id="email" name="email" required placeholder="{{ translate('register.email_placeholder') }}">
+                    </div>
+                    <div class="mb-4">
+                        <label for="school" class="form-label">{{ translate('register.school') }} <span class="text-danger">{{ translate('register.required') }}</span></label>
+                        <input type="text" class="form-control" id="school" name="school" required placeholder="{{ translate('register.school_placeholder') }}">
+                    </div>
+                    <div class="mb-4">
+                        <label for="phone" class="form-label">{{ translate('register.phone') }} <span class="text-danger">{{ translate('register.required') }}</span></label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required placeholder="{{ translate('register.phone_placeholder') }}" pattern="1[3-9][0-9]{9}" maxlength="11" minlength="11">
+                        <small class="form-text text-muted">{{ translate('register.phone_hint') }}</small>
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">{{ translate('register.password') }} <span class="text-danger">{{ translate('register.required') }}</span></label>
+                        <input type="password" class="form-control" id="password" name="password" required placeholder="{{ translate('register.password_placeholder') }}" minlength="6">
+                    </div>
+                    <div class="alert alert-info mb-4">
+                        <small><strong>{{ translate('register.privacy_note') }}</strong>{{ translate('register.privacy_desc') }}</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2">{{ translate('register.submit') }}</button>
+                </form>
+                <div class="mt-4 text-center">
+                    <p>{{ translate('register.has_account') }}<a href="{{ url_for('quickform.login') }}">{{ translate('register.login_link') }}</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

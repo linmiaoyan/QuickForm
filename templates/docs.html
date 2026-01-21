@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ translate('nav.docs') }} - QuickForm{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+        <div class="card">
+            <div class="card-body p-4 p-md-5 text-center">
+                <h2 class="mb-4">{{ translate('nav.docs') }}</h2>
+                <p class="lead mb-4">{{ translate('page.under_construction') }}</p>
+                <a href="https://my.feishu.cn/docx/IrwbdlPgwoBtVPxIobUcw5m9nbh?from=from_copylink" 
+                   target="_blank" 
+                   class="btn btn-primary btn-lg">
+                    {{ translate('common.view') }} {{ translate('nav.docs') }} <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

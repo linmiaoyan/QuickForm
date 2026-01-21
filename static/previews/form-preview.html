@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<!-- saved from url=(0109)https://wzkjgz.site/quickform/uploads/6b8d82e9-e02b-42cf-99a5-b752d2ee22af_deepseek_html_20251109_247130.html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>七年级英语单词连连看</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial Rounded MT Bold', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .stage-indicator {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            aspect-ratio: 1/1;
+            background: #3498db;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            padding: 5px;
+            text-align: center;
+            word-break: break-word;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card.selected {
+            background: #f39c12;
+            transform: scale(1.05);
+        }
+        
+        .card.matched {
+            background: #2ecc71;
+            cursor: default;
+            opacity: 0.5;
+            transform: scale(0.9);
+        }
+        
+        .card.error {
+            background: #e74c3c;
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #ff9f43;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        #restart {
+            background: #e74c3c;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        
+        .modal p {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+        
+        .modal input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        
+        .modal button {
+            width: 100%;
+            padding: 15px;
+            background: #2ecc71;
+            font-size: 1.2rem;
+        }
+        
+        .success-message {
+            display: none;
+            background: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .error-words {
+            background: rgba(231, 76, 60, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .error-words h3 {
+            margin-bottom: 10px;
+        }
+        
+        .error-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .error-item {
+            background: rgba(231, 76, 60, 0.5);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .timer-critical {
+            color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .stage-complete {
+            display: none;
+            background: rgba(46, 204, 113, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+        
+        @media (max-width: 768px) {
+            .game-board {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>英语单词连连看</h1>
+            <p class="subtitle">人教社七年级英语单词挑战 - 点击关联的英文和中文单词</p>
+        </header>
+        
+        <div class="stage-indicator" id="stage-indicator">第一阶段：10组单词</div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">剩余卡片</div>
+                <div class="stat-value" id="remaining">20</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">错误次数</div>
+                <div class="stat-value" id="mistakes">0/10</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">得分</div>
+                <div class="stat-value" id="score">100</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">剩余时间</div>
+                <div class="stat-value" id="timer">30</div>
+            </div>
+        </div>
+        
+        <div class="stage-complete" id="stage-complete" style="display: none;">
+            恭喜完成第一阶段！准备进入第二阶段...
+        </div>
+        
+        <div class="game-board" id="game-board"><div class="card" data-id="狗-cn" data-pair-id="dog" data-type="chinese">狗</div><div class="card" data-id="书-cn" data-pair-id="book" data-type="chinese">书</div><div class="card" data-id="房子-cn" data-pair-id="house" data-type="chinese">房子</div><div class="card" data-id="book-en" data-pair-id="book" data-type="english">book</div><div class="card" data-id="朋友-cn" data-pair-id="friend" data-type="chinese">朋友</div><div class="card" data-id="garden-en" data-pair-id="garden" data-type="english">garden</div><div class="card" data-id="猫-cn" data-pair-id="cat" data-type="chinese">猫</div><div class="card" data-id="friend-en" data-pair-id="friend" data-type="english">friend</div><div class="card" data-id="house-en" data-pair-id="house" data-type="english">house</div><div class="card" data-id="果汁-cn" data-pair-id="juice" data-type="chinese">果汁</div><div class="card" data-id="cat-en" data-pair-id="cat" data-type="english">cat</div><div class="card" data-id="apple-en" data-pair-id="apple" data-type="english">apple</div><div class="card" data-id="大象-cn" data-pair-id="elephant" data-type="chinese">大象</div><div class="card" data-id="冰淇淋-cn" data-pair-id="ice cream" data-type="chinese">冰淇淋</div><div class="card" data-id="juice-en" data-pair-id="juice" data-type="english">juice</div><div class="card" data-id="dog-en" data-pair-id="dog" data-type="english">dog</div><div class="card" data-id="elephant-en" data-pair-id="elephant" data-type="english">elephant</div><div class="card" data-id="苹果-cn" data-pair-id="apple" data-type="chinese">苹果</div><div class="card" data-id="花园-cn" data-pair-id="garden" data-type="chinese">花园</div><div class="card" data-id="ice cream-en" data-pair-id="ice cream" data-type="english">ice cream</div></div>
+        
+        <div class="error-words" id="error-words" style="display: none;">
+            <h3>错误单词记录</h3>
+            <div class="error-list" id="error-list"></div>
+        </div>
+        
+        <div class="controls">
+            <button id="start" disabled="">开始游戏</button>
+            <button id="restart">重新开始</button>
+        </div>
+        
+        <div class="success-message" id="success-message" style="display: none;">
+            数据回收成功！
+        </div>
+    </div>
+    
+    <div class="modal" id="result-modal">
+        <div class="modal-content">
+            <h2>游戏结束！</h2>
+            <p>最终得分: <span id="final-score">0</span></p>
+            <p>完成阶段: <span id="final-stage">1</span></p>
+            <p>剩余卡片: <span id="final-remaining">0</span></p>
+            <p>错误次数: <span id="final-mistakes">0</span></p>
+            <p>请输入您的名字提交成绩</p>
+            <input type="text" id="player-name" placeholder="请输入您的名字">
+            <button id="submit-score">提交成绩</button>
+        </div>
+    </div>
+
+    <script>
+        // 七年级英语单词库
+        const wordPairs = [
+            ["apple", "苹果"],
+            ["book", "书"],
+            ["cat", "猫"],
+            ["dog", "狗"],
+            ["elephant", "大象"],
+            ["friend", "朋友"],
+            ["garden", "花园"],
+            ["house", "房子"],
+            ["ice cream", "冰淇淋"],
+            ["juice", "果汁"],
+            ["kite", "风筝"],
+            ["lion", "狮子"],
+            ["monkey", "猴子"],
+            ["notebook", "笔记本"],
+            ["orange", "橙子"],
+            ["pencil", "铅笔"],
+            ["queen", "女王"],
+            ["rabbit", "兔子"],
+            ["school", "学校"],
+            ["teacher", "老师"]
+        ];
+        
+        // 游戏状态变量
+        let cards = [];
+        let selectedCards = [];
+        let matchedPairs = 0;
+        let mistakes = 0;
+        let score = 100;
+        let gameStarted = false;
+        let errorWords = [];
+        let currentStage = 1;
+        let timeLeft = 30;
+        let timerInterval;
+        let stageComplete = false;
+        
+        // DOM元素
+        const gameBoard = document.getElementById('game-board');
+        const remainingElement = document.getElementById('remaining');
+        const mistakesElement = document.getElementById('mistakes');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const stageIndicator = document.getElementById('stage-indicator');
+        const stageCompleteElement = document.getElementById('stage-complete');
+        const startButton = document.getElementById('start');
+        const restartButton = document.getElementById('restart');
+        const resultModal = document.getElementById('result-modal');
+        const finalScoreElement = document.getElementById('final-score');
+        const finalStageElement = document.getElementById('final-stage');
+        const finalRemainingElement = document.getElementById('final-remaining');
+        const finalMistakesElement = document.getElementById('final-mistakes');
+        const playerNameInput = document.getElementById('player-name');
+        const submitScoreButton = document.getElementById('submit-score');
+        const successMessage = document.getElementById('success-message');
+        const errorWordsContainer = document.getElementById('error-words');
+        const errorList = document.getElementById('error-list');
+        
+        // 初始化游戏
+        function initGame() {
+            // 重置游戏状态
+            cards = [];
+            selectedCards = [];
+            matchedPairs = 0;
+            mistakes = 0;
+            score = 100;
+            gameStarted = false;
+            errorWords = [];
+            currentStage = 1;
+            timeLeft = 30;
+            stageComplete = false;
+            
+            // 更新UI
+            remainingElement.textContent = "20";
+            mistakesElement.textContent = "0/10";
+            scoreElement.textContent = "100";
+            timerElement.textContent = "30";
+            timerElement.classList.remove("timer-critical");
+            stageIndicator.textContent = "第一阶段：10组单词";
+            stageCompleteElement.style.display = "none";
+            errorWordsContainer.style.display = "none";
+            errorList.innerHTML = "";
+            successMessage.style.display = "none";
+            
+            // 清空游戏板
+            gameBoard.innerHTML = '';
+            
+            // 初始化第一阶段卡片
+            initStage(1);
+            
+            // 清除计时器
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        }
+        
+        // 初始化阶段
+        function initStage(stage) {
+            // 清空游戏板
+            gameBoard.innerHTML = '';
+            
+            // 重置阶段状态
+            cards = [];
+            selectedCards = [];
+            matchedPairs = 0;
+            stageComplete = false;
+            
+            // 根据阶段选择单词
+            let stageWords;
+            if (stage === 1) {
+                stageWords = wordPairs.slice(0, 10);
+                stageIndicator.textContent = "第一阶段：10组单词";
+            } else {
+                stageWords = wordPairs.slice(10, 20);
+                stageIndicator.textContent = "第二阶段：10组单词";
+            }
+            
+            // 创建卡片数组（每对单词一次）
+            stageWords.forEach(pair => {
+                cards.push({ 
+                    id: pair[0] + "-en",
+                    content: pair[0], 
+                    type: 'english',
+                    pairId: pair[0]
+                });
+                cards.push({ 
+                    id: pair[1] + "-cn",
+                    content: pair[1], 
+                    type: 'chinese',
+                    pairId: pair[0]
+                });
+            });
+            
+            // 洗牌算法
+            shuffleCards(cards);
+            
+            // 创建卡片元素
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.id = card.id;
+                cardElement.dataset.pairId = card.pairId;
+                cardElement.dataset.type = card.type;
+                cardElement.textContent = card.content;
+                
+                cardElement.addEventListener('click', () => selectCard(cardElement));
+                
+                gameBoard.appendChild(cardElement);
+            });
+            
+            // 更新剩余卡片显示
+            remainingElement.textContent = cards.length;
+        }
+        
+        // 洗牌函数
+        function shuffleCards(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        // 选择卡片
+        function selectCard(cardElement) {
+            // 如果游戏未开始或卡片已匹配或已选中，则返回
+            if (!gameStarted || cardElement.classList.contains('matched') || 
+                cardElement.classList.contains('selected') || stageComplete) {
+                return;
+            }
+            
+            // 选中卡片
+            cardElement.classList.add('selected');
+            selectedCards.push(cardElement);
+            
+            // 如果选中了两张卡片，检查是否匹配
+            if (selectedCards.length === 2) {
+                const card1 = selectedCards[0];
+                const card2 = selectedCards[1];
+                
+                // 检查是否匹配（同一单词对）
+                if (card1.dataset.pairId === card2.dataset.pairId && 
+                    card1.dataset.type !== card2.dataset.type) {
+                    // 匹配成功
+                    setTimeout(() => {
+                        card1.classList.add('matched');
+                        card2.classList.add('matched');
+                        selectedCards = [];
+                        
+                        // 更新匹配对数
+                        matchedPairs++;
+                        const remaining = cards.length - (matchedPairs * 2);
+                        remainingElement.textContent = remaining;
+                        
+                        // 检查阶段是否完成
+                        if (matchedPairs === cards.length / 2) {
+                            completeStage();
+                        }
+                    }, 300);
+                } else {
+                    // 匹配失败
+                    mistakes++;
+                    mistakesElement.textContent = `${mistakes}/10`;
+                    
+                    // 扣分
+                    score = Math.max(0, score - 10);
+                    scoreElement.textContent = score;
+                    
+                    // 记录错误单词
+                    const wordPair = findWordPair(card1.dataset.pairId, card2.dataset.pairId);
+                    if (wordPair && !errorWords.some(pair => 
+                        (pair[0] === wordPair[0] && pair[1] === wordPair[1]) ||
+                        (pair[0] === wordPair[1] && pair[1] === wordPair[0]))) {
+                        errorWords.push(wordPair);
+                        updateErrorWords();
+                    }
+                    
+                    // 显示错误效果
+                    card1.classList.add('error');
+                    card2.classList.add('error');
+                    
+                    // 短暂延迟后取消选中状态
+                    setTimeout(() => {
+                        card1.classList.remove('selected', 'error');
+                        card2.classList.remove('selected', 'error');
+                        selectedCards = [];
+                        
+                        // 检查错误次数是否达到上限
+                        if (mistakes >= 10) {
+                            endGame(false);
+                        }
+                    }, 1000);
+                }
+            }
+        }
+        
+        // 查找单词对
+        function findWordPair(id1, id2) {
+            for (const pair of wordPairs) {
+                if (pair[0] === id1 || pair[0] === id2) {
+                    return pair;
+                }
+            }
+            return null;
+        }
+        
+        // 更新错误单词显示
+        function updateErrorWords() {
+            errorWordsContainer.style.display = "block";
+            errorList.innerHTML = "";
+            
+            errorWords.forEach(pair => {
+                const errorItem = document.createElement('div');
+                errorItem.classList.add('error-item');
+                errorItem.textContent = `${pair[0]} - ${pair[1]}`;
+                errorList.appendChild(errorItem);
+            });
+        }
+        
+        // 完成当前阶段
+        function completeStage() {
+            stageComplete = true;
+            
+            if (currentStage === 1) {
+                // 显示阶段完成消息
+                stageCompleteElement.style.display = "block";
+                
+                // 2秒后进入第二阶段
+                setTimeout(() => {
+                    currentStage = 2;
+                    timeLeft = 30;
+                    timerElement.textContent = "30";
+                    timerElement.classList.remove("timer-critical");
+                    stageCompleteElement.style.display = "none";
+                    initStage(2);
+                    startTimer();
+                }, 2000);
+            } else {
+                // 完成第二阶段，游戏胜利
+                endGame(true);
+            }
+        }
+        
+        // 开始游戏
+        function startGame() {
+            if (gameStarted) return;
+            
+            gameStarted = true;
+            startButton.disabled = true;
+            
+            // 开始计时
+            startTimer();
+        }
+        
+        // 开始计时器
+        function startTimer() {
+            // 清除之前的计时器
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            timeLeft = 30;
+            timerElement.textContent = timeLeft;
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = timeLeft;
+                
+                // 时间少于10秒时添加警告效果
+                if (timeLeft <= 10) {
+                    timerElement.classList.add("timer-critical");
+                }
+                
+                // 时间到
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame(false);
+                }
+            }, 1000);
+        }
+        
+        // 结束游戏
+        function endGame(isWin) {
+            gameStarted = false;
+            clearInterval(timerInterval);
+            
+            // 显示结果模态框
+            finalScoreElement.textContent = score;
+            finalStageElement.textContent = currentStage;
+            finalRemainingElement.textContent = cards.length - (matchedPairs * 2);
+            finalMistakesElement.textContent = mistakes;
+            resultModal.style.display = 'flex';
+        }
+        
+        // 提交成绩
+        function submitScore() {
+            const playerName = playerNameInput.value.trim();
+            
+            if (!playerName) {
+                alert('请输入您的名字');
+                return;
+            }
+            
+            // 准备提交的数据
+            const gameData = {
+                name: playerName,
+                score: score,
+                stage: currentStage,
+                remaining: cards.length - (matchedPairs * 2),
+                mistakes: mistakes,
+                errorWords: errorWords,
+                timestamp: new Date().toISOString()
+            };
+            
+            // 提交到服务器
+            fetch('http://127.0.0.1:5001/api/submit/75db2938-b3ce-474c-b4fa-8e1146a42b7b', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gameData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    // 显示成功消息
+                    resultModal.style.display = 'none';
+                    successMessage.style.display = 'block';
+                    
+                    // 3秒后隐藏成功消息
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 3000);
+                } else {
+                    alert('提交失败，请重试');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('提交失败，请检查网络连接');
+            });
+        }
+        
+        // 事件监听器
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', initGame);
+        submitScoreButton.addEventListener('click', submitScore);
+        
+        // 初始化游戏
+        initGame();
+    </script>
+
+</body></html>

@@ -1,0 +1,1061 @@
+{% extends 'base.html' %}
+
+{% block title %}管理员面板 - QuickForm{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <!-- 侧边栏 -->
+    <div class="admin-sidebar">
+        <div style="padding: 1.5rem 1rem 1rem 1rem; border-bottom: 1px solid #e5e7eb;">
+            <h6 style="font-weight: 600; color: #6b7280; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">导航</h6>
+        </div>
+        <a href="#users" class="sidebar-item active" data-tab="users" onclick="switchTab('users'); return false;">
+            <i class="bi bi-people" style="margin-right: 0.75rem;"></i> 用户管理
+        </a>
+        <a href="#tasks" class="sidebar-item" data-tab="tasks" onclick="switchTab('tasks'); return false;">
+            <i class="bi bi-list-task" style="margin-right: 0.75rem;"></i> 任务报表
+        </a>
+        <a href="#html-review" class="sidebar-item" data-tab="html-review" onclick="switchTab('html-review'); return false;">
+            <i class="bi bi-file-earmark-code" style="margin-right: 0.75rem;"></i> HTML审核
+        </a>
+        <a href="#cert-review" class="sidebar-item" data-tab="cert-review" onclick="switchTab('cert-review'); return false;">
+            <i class="bi bi-shield-check" style="margin-right: 0.75rem;"></i> 认证审核
+        </a>
+        <a href="#data" class="sidebar-item" data-tab="data" onclick="switchTab('data'); return false;">
+            <i class="bi bi-graph-up" style="margin-right: 0.75rem;"></i> 数据报表
+        </a>
+    </div>
+    
+    <!-- 主内容区 -->
+    <div class="admin-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0" style="color: #111827; font-weight: 700;">管理员面板</h2>
+        </div>
+        
+        <!-- 数据统计卡片 -->
+        <div class="row mb-4 g-3">
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card" style="border-left: 4px solid #2563eb;">
+                    <div class="stat-label">总用户数</div>
+                    <div class="stat-number">{{ stats.total_users }}</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card" style="border-left: 4px solid #10b981;">
+                    <div class="stat-label">管理员数</div>
+                    <div class="stat-number">{{ stats.admin_users }}</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                    <div class="stat-label">总任务数</div>
+                    <div class="stat-number">{{ stats.total_tasks }}</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+                    <div class="stat-label">总提交数</div>
+                    <div class="stat-number">{{ stats.total_submissions }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 标签页导航（保留用于兼容性，但隐藏） -->
+        <ul class="nav nav-tabs mb-4 d-none" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
+                    用户管理
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">
+                    任务报表
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="html-review-tab" data-bs-toggle="tab" data-bs-target="#html-review" type="button" role="tab">
+                    HTML审核
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cert-review-tab" data-bs-toggle="tab" data-bs-target="#cert-review" type="button" role="tab">
+                    认证审核
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button" role="tab">
+                    数据报表
+                </button>
+            </li>
+        </ul>
+
+        <!-- 标签页内容 -->
+        <div class="tab-content" id="adminTabsContent">
+            <!-- 用户管理标签页 -->
+            <div class="tab-pane fade show active" id="users" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0" style="color: white;">用户列表与权限分配</h5>
+                        <div>
+                            <a href="{{ url_for('quickform.admin_users_statistics') }}" class="btn btn-sm me-2" style="font-weight: 500; background-color: #3b82f6; color: white; border: none;">
+                                <i class="bi bi-graph-up"></i> 数据统计
+                            </a>
+                            <a href="{{ url_for('quickform.admin_export_users') }}" class="btn btn-sm" style="font-weight: 500; background-color: #10b981; color: white; border: none;">
+                                <i class="bi bi-download"></i> 导出Excel
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-3 gap-3">
+                            <form class="w-100 w-lg-auto" method="get" action="{{ url_for('quickform.admin_panel') }}">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="q" value="{{ user_search }}" placeholder="搜索用户名 / 邮箱 / 学校 / 手机号">
+                                    {% if user_search %}
+                                    <a class="btn btn-outline-secondary" href="{{ url_for('quickform.admin_panel') }}">重置</a>
+                                    {% endif %}
+                                    <button class="btn" type="submit" style="background-color: #2563eb; color: white; border: none;">搜索</button>
+                                </div>
+                            </form>
+                            <div class="text-muted small text-lg-end w-100 w-lg-auto">
+                                共 {{ user_total }} 位用户，当前第 {{ user_page|int }} / {{ user_pages|int }} 页
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            {% if users %}
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">ID</th>
+                                        <th style="width: 100px;">用户名</th>
+                                        <th style="width: 180px;">邮箱</th>
+                                        <th style="width: 220px; min-width: 180px;">学校</th>
+                                        <th style="width: 120px;">手机号</th>
+                                        <th style="width: 80px;">角色</th>
+                                        <th style="width: 90px;">认证状态</th>
+                                        <th style="width: 100px;">任务数/上限</th>
+                                        <th style="width: 150px;">注册时间</th>
+                                        <th style="width: 100px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td style="white-space: nowrap;">{{ user.id }}</td>
+                                        <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ user.username }}">{{ user.username }}</td>
+                                        <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ user.email }}">{{ user.email }}</td>
+                                        <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ user.school or '未填写' }}">{{ user.school or '未填写' }}</td>
+                                        <td style="white-space: nowrap;">{{ user.phone or '未填写' }}</td>
+                                        <td>
+                                            <span class="badge {% if user.role == 'admin' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                                {% if user.role == 'admin' %}管理员{% else %}普通用户{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% set pending_req = user.certification_requests | selectattr('status', 'equalto', 0) | list %}
+                                            {% if user.is_certified %}
+                                            <span class="status-badge featured">已认证</span>
+                                            {% elif pending_req %}
+                                            <span class="status-badge pending">审核中</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">未认证</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ user.tasks|length }} /
+                                            {% if user.task_limit == -1 %}
+                                                <span class="text-success">无限制</span>
+                                            {% else %}
+                                                {{ user.task_limit }}
+                                            {% endif %}
+                                        </td>
+                                        <td style="white-space: nowrap; font-size: 0.9em;">{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            {% if user.id != current_user.id %}
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="white-space: nowrap;">
+                                                    <i class="bi bi-three-dots-vertical"></i> 操作
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <form action="{{ url_for('quickform.admin_change_role', user_id=user.id) }}" method="POST" onsubmit="return confirm('确定要{% if user.role == 'admin' %}取消管理员{% else %}设为管理员{% endif %}权限吗？')">
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="bi bi-{% if user.role == 'admin' %}x-circle text-warning{% else %}shield-check text-success{% endif %}"></i>
+                                                                {% if user.role == 'admin' %}取消管理员{% else %}设为管理员{% endif %}
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" onclick="resetPassword({{ user.id }}, '{{ user.username }}'); return false;">
+                                                            <i class="bi bi-key text-primary"></i> 重置密码
+                                                        </a>
+                                                    </li>
+                                                    {% if user.role != 'admin' %}
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <form action="{{ url_for('quickform.admin_delete_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('确定要删除用户 {{ user.username }} 吗？\n\n这将同时删除该用户的：\n- 所有任务\n- 所有提交数据\n- AI配置\n- 认证申请\n\n此操作不可恢复！')">
+                                                            <button type="submit" class="dropdown-item text-danger">
+                                                                <i class="bi bi-trash"></i> 删除用户
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+                                            {% else %}
+                                            <span class="text-muted">当前用户</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <p class="mb-1">未找到满足条件的用户。</p>
+                                <p class="mb-0">可以尝试更换关键词或清空搜索条件。</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if user_pages > 1 %}
+                        <nav aria-label="用户分页" class="mt-3">
+                            <ul class="pagination pagination-sm justify-content-center mb-0">
+                                <li class="page-item {% if user_page <= 1 %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', user_page=user_page-1, task_page=task_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='users', q=user_search if user_search else None) }}" aria-label="上一页">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% set start_page = [1, user_page - 2]|max %}
+                                {% set end_page = [user_pages, user_page + 2]|min %}
+
+                                {% if start_page > 1 %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('quickform.admin_panel', user_page=1, task_page=task_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='users', q=user_search if user_search else None) }}">1</a></li>
+                                {% if start_page > 2 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                {% endif %}
+
+                                {% for page_num in range(start_page, end_page + 1) %}
+                                <li class="page-item {% if page_num|int == user_page|int %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', user_page=page_num, task_page=task_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='users', q=user_search if user_search else None) }}">{{ page_num }}</a>
+                                </li>
+                                {% endfor %}
+
+                                {% if end_page < user_pages %}
+                                {% if end_page < user_pages - 1 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('quickform.admin_panel', user_page=user_pages, task_page=task_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='users', q=user_search if user_search else None) }}">{{ user_pages }}</a></li>
+                                {% endif %}
+
+                                <li class="page-item {% if user_page >= user_pages %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', user_page=user_page+1, task_page=task_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='users', q=user_search if user_search else None) }}" aria-label="下一页">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务报表标签页 -->
+            <div class="tab-pane fade" id="tasks" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">所有任务列表</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="text-muted small">
+                                共 {{ task_total }} 个任务，当前第 {{ task_page|int }} / {{ task_pages|int }} 页
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>任务ID</th>
+                                        <th>标题</th>
+                                        <th>创建者</th>
+                                        <th>提交数</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for task in all_tasks %}
+                                    <tr>
+                                        <td>{{ task.id }}</td>
+                                        <td>{{ task.title }}</td>
+                                        <td>{{ task.author.username }}</td>
+                                        <td>{{ task.submission|length }}</td>
+                                        <td>{{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('quickform.task_detail', task_id=task.id) }}" 
+                                               class="btn btn-sm" 
+                                               style="background-color: #2563eb; color: white; border: none; white-space: nowrap;">
+                                                <i class="bi bi-eye" style="margin-right: 0.25rem;"></i>
+                                                查看
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if task_pages > 1 %}
+                        <nav aria-label="任务列表分页" class="mt-3">
+                            <ul class="pagination pagination-sm justify-content-center mb-0">
+                                <li class="page-item {% if task_page <= 1 %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', task_page=task_page-1, user_page=user_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='tasks', q=user_search if user_search else None) }}" aria-label="上一页">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% set start_page = [1, task_page - 2]|max %}
+                                {% set end_page = [task_pages, task_page + 2]|min %}
+
+                                {% if start_page > 1 %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('quickform.admin_panel', task_page=1, user_page=user_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='tasks', q=user_search if user_search else None) }}">1</a></li>
+                                {% if start_page > 2 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                {% endif %}
+
+                                {% for page_num in range(start_page, end_page + 1) %}
+                                <li class="page-item {% if page_num|int == task_page|int %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', task_page=page_num, user_page=user_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='tasks', q=user_search if user_search else None) }}">{{ page_num }}</a>
+                                </li>
+                                {% endfor %}
+
+                                {% if end_page < task_pages %}
+                                {% if end_page < task_pages - 1 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('quickform.admin_panel', task_page=task_pages, user_page=user_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='tasks', q=user_search if user_search else None) }}">{{ task_pages }}</a></li>
+                                {% endif %}
+
+                                <li class="page-item {% if task_page >= task_pages %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', task_page=task_page+1, user_page=user_page, html_review_page=html_review_page, cert_review_page=cert_review_page, tab='tasks', q=user_search if user_search else None) }}" aria-label="下一页">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- HTML审核标签页 -->
+            <div class="tab-pane fade" id="html-review" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">HTML 页面审核</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-4">
+                            <strong>待审核 HTML 页面：</strong> {{ pending_html_count }}
+                        </div>
+                        {% if html_tasks_with_review %}
+                        {% set has_pending = pending_html_count > 0 %}
+                        <form id="batchApproveForm" method="POST" action="{{ url_for('quickform.admin_review_html_batch') }}">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="selectAllTasks" {% if not has_pending %}disabled{% endif %}>
+                                    <label class="form-check-label" for="selectAllTasks">
+                                        全选当前列表
+                                    </label>
+                                </div>
+                                <button type="submit" id="batchApproveBtn" class="btn btn-sm" 
+                                        style="background-color: #10b981; color: white; border: none;"
+                                        {% if not has_pending %}disabled{% endif %}>
+                                    <i class="bi bi-check-circle" style="margin-right: 0.25rem;"></i>
+                                    批量通过
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" style="width: 40px;">选择</th>
+                                            <th>任务ID</th>
+                                            <th>任务标题</th>
+                                            <th>上传用户</th>
+                                            <th>文件名</th>
+                                            <th>审核状态</th>
+                                            <th>审核人</th>
+                                            <th>审核时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in html_tasks_with_review %}
+                                        <tr>
+                                            <td>
+                                                {% if item.task.html_approved != 1 %}
+                                                <input type="checkbox" class="form-check-input task-checkbox" name="task_ids" value="{{ item.task.id }}">
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ item.task.id }}</td>
+                                            <td>{{ item.task.title }}</td>
+                                            <td>
+                                                {{ item.author.username if item.author else '未知' }}
+                                                {% if item.author and item.author.is_certified %}
+                                                <span class="badge bg-success ms-1">已认证</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if item.task.file_name and item.task.file_path %}
+                                                {% set filename = item.task.file_path.replace('\\', '/').split('/')[-1] %}
+                                                <a href="{{ url_for('quickform.uploaded_file', filename=filename) }}" target="_blank">
+                                                    {{ item.task.file_name }}
+                                                </a>
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                            {% if item.task.html_approved == 1 %}
+                                            <span class="status-badge featured">已通过</span>
+                                            {% elif item.task.html_approved == -1 %}
+                                            <span class="status-badge rejected">已拒绝</span>
+                                            {% else %}
+                                            <span class="status-badge pending">待审核</span>
+                                            {% endif %}
+                                            </td>
+                                            <td>{{ item.approver.username if item.approver else '-' }}</td>
+                                            <td>{{ item.task.html_approved_at.strftime('%Y-%m-%d %H:%M:%S') if item.task.html_approved_at else '-' }}</td>
+                                            <td>
+                                                <div class="d-flex flex-wrap gap-2" style="min-width: 150px;">
+                                                    <button type="button" class="btn btn-sm" 
+                                                            style="background-color: #2563eb; color: white; border: none; white-space: nowrap;"
+                                                            data-bs-toggle="modal" data-bs-target="#previewModal{{ item.task.id }}">
+                                                        <i class="bi bi-eye" style="margin-right: 0.25rem;"></i>
+                                                        预览
+                                                    </button>
+                                                    {% if item.task.html_approved != 1 %}
+                                                    <form method="POST" action="{{ url_for('quickform.admin_review_html_action', task_id=item.task.id) }}" class="d-inline">
+                                                        <button type="submit" name="action" value="approve" 
+                                                                class="btn btn-sm" 
+                                                                style="background-color: #10b981; color: white; border: none; white-space: nowrap;">
+                                                            <i class="bi bi-check-circle" style="margin-right: 0.25rem;"></i>
+                                                            通过
+                                                        </button>
+                                                    </form>
+                                                    {% endif %}
+                                                    {% if item.task.html_approved == 1 %}
+                                                    <form method="POST" action="{{ url_for('quickform.admin_review_html_action', task_id=item.task.id) }}" class="d-inline">
+                                                        {% if item.task.is_featured %}
+                                                        <button type="submit" name="action" value="unfeature" 
+                                                                class="btn btn-sm" 
+                                                                style="background-color: #f59e0b; color: white; border: none; white-space: nowrap;">
+                                                            <i class="bi bi-star" style="margin-right: 0.25rem;"></i>
+                                                            取消加精
+                                                        </button>
+                                                        {% else %}
+                                                        <button type="submit" name="action" value="feature" 
+                                                                class="btn btn-sm" 
+                                                                style="background-color: #3b82f6; color: white; border: none; white-space: nowrap;">
+                                                            <i class="bi bi-star-fill" style="margin-right: 0.25rem;"></i>
+                                                            加精
+                                                        </button>
+                                                        {% endif %}
+                                                    </form>
+                                                    {% endif %}
+                                                    {% if item.task.html_approved != -1 %}
+                                                    <form method="POST" action="{{ url_for('quickform.admin_review_html_action', task_id=item.task.id) }}" class="w-100 d-flex gap-2 align-items-center flex-wrap" style="margin-top: 0.25rem;">
+                                                        <input type="text" name="note" class="form-control form-control-sm flex-grow-1" 
+                                                               placeholder="拒绝原因" required 
+                                                               style="min-width: 120px; max-width: 200px;">
+                                                        <button type="submit" name="action" value="reject" 
+                                                                class="btn btn-sm" 
+                                                                style="background-color: #ef4444; color: white; border: none; white-space: nowrap;"
+                                                                onclick="
+                                                                    const note = this.form.querySelector('input[name=\"note\"]').value;
+                                                                    if (!note || note.trim() === '') {
+                                                                        alert('请输入拒绝原因');
+                                                                        return false;
+                                                                    }
+                                                                    return confirm('确定要拒绝该页面吗？');
+                                                                ">
+                                                            <i class="bi bi-x-circle" style="margin-right: 0.25rem;"></i>
+                                                            拒绝
+                                                        </button>
+                                                    </form>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </form>
+                        
+                        <!-- 分页 -->
+                        {% if html_review_pages > 1 %}
+                        <nav aria-label="HTML审核分页" class="mt-3">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item {% if html_review_page <= 1 %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', html_review_page=html_review_page-1, user_page=user_page, task_page=task_page, cert_review_page=cert_review_page, tab='html-review', q=user_search if user_search else None) }}" aria-label="上一页">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% set start_page = [1, html_review_page - 2]|max %}
+                                {% set end_page = [html_review_pages, html_review_page + 2]|min %}
+
+                                {% if start_page > 1 %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('quickform.admin_panel', html_review_page=1, user_page=user_page, task_page=task_page, cert_review_page=cert_review_page, tab='html-review', q=user_search if user_search else None) }}">1</a></li>
+                                {% if start_page > 2 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                {% endif %}
+
+                                {% for p in range(start_page, end_page + 1) %}
+                                <li class="page-item {% if p|int == html_review_page|int %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', html_review_page=p, user_page=user_page, task_page=task_page, cert_review_page=cert_review_page, tab='html-review', q=user_search if user_search else None) }}">{{ p }}</a>
+                                </li>
+                                {% endfor %}
+
+                                {% if end_page < html_review_pages %}
+                                {% if end_page < html_review_pages - 1 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('quickform.admin_panel', html_review_page=html_review_pages, user_page=user_page, task_page=task_page, cert_review_page=cert_review_page, tab='html-review', q=user_search if user_search else None) }}">{{ html_review_pages }}</a></li>
+                                {% endif %}
+
+                                <li class="page-item {% if html_review_page >= html_review_pages %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', html_review_page=html_review_page+1, user_page=user_page, task_page=task_page, cert_review_page=cert_review_page, tab=current_tab, q=user_search if user_search else None) }}" aria-label="下一页">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center text-muted py-4">
+                            暂无需要审核的 HTML 页面。
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- HTML预览模态框 -->
+                {% for item in html_tasks_with_review %}
+                {% set filename = item.task.file_path.replace('\\', '/').split('/')[-1] if item.task.file_path else None %}
+                <div class="modal fade" id="previewModal{{ item.task.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">HTML文件预览 - {{ item.task.title }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <strong>任务信息：</strong>
+                                    <ul>
+                                        <li>任务标题：{{ item.task.title }}</li>
+                                        <li>上传用户：{{ item.author.username if item.author else '未知' }}</li>
+                                        <li>用户邮箱：{{ item.author.email if item.author else '-' }}</li>
+                                        <li>用户学校：{{ item.author.school if item.author else '-' }}</li>
+                                        <li>创建时间：{{ item.task.created_at.strftime('%Y-%m-%d %H:%M:%S') if item.task.created_at else '-' }}</li>
+                                    </ul>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>HTML内容预览：</strong>
+                                    {% if filename %}
+                                    <iframe src="{{ url_for('quickform.uploaded_file', filename=filename) }}"
+                                            style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 4px;"
+                                            loading="lazy"></iframe>
+                                    {% else %}
+                                    <p class="text-muted">文件路径不存在</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- 认证审核标签页 -->
+            <div class="tab-pane fade" id="cert-review" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">教师认证审核</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-primary mb-4">
+                            <strong>待审核教师认证：</strong> {{ pending_cert_count }}
+                        </div>
+                        {% if cert_requests %}
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>申请人</th>
+                                        <th>学校</th>
+                                        <th>提交时间</th>
+                                        <th>状态</th>
+                                        <th>审核时间</th>
+                                        <th>材料</th>
+                                        <th>审核备注</th>
+                                        <th style="width: 220px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in cert_requests %}
+                                    <tr>
+                                        <td>{{ req.user.username if req.user else '未知用户' }}</td>
+                                        <td>{{ req.user.school if req.user else '-' }}</td>
+                                        <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            {% if req.status == 1 %}
+                                            <span class="status-badge featured">已通过</span>
+                                            {% elif req.status == -1 %}
+                                            <span class="status-badge rejected">已拒绝</span>
+                                            {% else %}
+                                            <span class="status-badge pending">待审核</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if req.reviewed_at %}
+                                                {{ req.reviewed_at.strftime('%Y-%m-%d %H:%M') }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if req.file_path %}
+                                            <a class="btn btn-sm" 
+                                               style="background-color: #2563eb; color: white; border: none; white-space: nowrap;"
+                                               href="{{ url_for('quickform.admin_view_certification_file', request_id=req.id) }}" target="_blank">
+                                                <i class="bi bi-eye" style="margin-right: 0.25rem;"></i>
+                                                查看材料
+                                            </a>
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ req.review_note or '-' }}</td>
+                                        <td>
+                                            {% if req.status == 0 %}
+                                            <form method="POST" action="{{ url_for('quickform.admin_handle_certification', request_id=req.id) }}" class="d-flex flex-wrap gap-2 align-items-center">
+                                                <input type="text" class="form-control form-control-sm" name="note" placeholder="备注（可选）" style="min-width: 150px; max-width: 250px;">
+                                                <button type="submit" name="action" value="approve" 
+                                                        class="btn btn-sm" 
+                                                        style="background-color: #10b981; color: white; border: none; white-space: nowrap;">
+                                                    <i class="bi bi-check-circle" style="margin-right: 0.25rem;"></i>
+                                                    通过
+                                                </button>
+                                                <button type="submit" name="action" value="reject" 
+                                                        class="btn btn-sm" 
+                                                        style="background-color: #ef4444; color: white; border: none; white-space: nowrap;"
+                                                        onclick="return confirm('确定要拒绝该认证申请吗？')">
+                                                    <i class="bi bi-x-circle" style="margin-right: 0.25rem;"></i>
+                                                    拒绝
+                                                </button>
+                                            </form>
+                                            {% else %}
+                                            <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 分页 -->
+                        {% if cert_review_pages > 1 %}
+                        <nav aria-label="认证审核分页" class="mt-3">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item {% if cert_review_page <= 1 %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', cert_review_page=cert_review_page-1, user_page=user_page, task_page=task_page, html_review_page=html_review_page, tab='cert-review', q=user_search if user_search else None) }}" aria-label="上一页">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% set start_page = [1, cert_review_page - 2]|max %}
+                                {% set end_page = [cert_review_pages, cert_review_page + 2]|min %}
+
+                                {% if start_page > 1 %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('quickform.admin_panel', cert_review_page=1, user_page=user_page, task_page=task_page, html_review_page=html_review_page, tab='cert-review', q=user_search if user_search else None) }}">1</a></li>
+                                {% if start_page > 2 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                {% endif %}
+
+                                {% for p in range(start_page, end_page + 1) %}
+                                <li class="page-item {% if p|int == cert_review_page|int %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', cert_review_page=p, user_page=user_page, task_page=task_page, html_review_page=html_review_page, tab='cert-review', q=user_search if user_search else None) }}">{{ p }}</a>
+                                </li>
+                                {% endfor %}
+
+                                {% if end_page < cert_review_pages %}
+                                {% if end_page < cert_review_pages - 1 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('quickform.admin_panel', cert_review_page=cert_review_pages, user_page=user_page, task_page=task_page, html_review_page=html_review_page, tab='cert-review', q=user_search if user_search else None) }}">{{ cert_review_pages }}</a></li>
+                                {% endif %}
+
+                                <li class="page-item {% if cert_review_page >= cert_review_pages %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('quickform.admin_panel', cert_review_page=cert_review_page+1, user_page=user_page, task_page=task_page, html_review_page=html_review_page, tab='cert-review', q=user_search if user_search else None) }}" aria-label="下一页">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center text-muted py-4">
+                            暂无认证申请记录。
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- 数据报表标签页 -->
+            <div class="tab-pane fade" id="data" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">数据统计报表</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6>用户统计</h6>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>管理员用户数：</span>
+                                        <strong>{{ stats.admin_users }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>普通用户数：</span>
+                                        <strong>{{ stats.normal_users }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>今日新注册：</span>
+                                        <strong>{{ stats.new_users_today }}</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>任务统计</h6>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>总任务数：</span>
+                                        <strong>{{ stats.total_tasks }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>今日新增任务：</span>
+                                        <strong>{{ stats.new_tasks_today }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>平均每个用户任务数：</span>
+                                        <strong>{{ "%.2f"|format(stats.avg_tasks_per_user) }}</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>提交统计</h6>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>总提交数：</span>
+                                        <strong>{{ stats.total_submissions }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>今日新增提交：</span>
+                                        <strong>{{ stats.new_submissions_today }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>平均每个任务提交数：</span>
+                                        <strong>{{ "%.2f"|format(stats.avg_submissions_per_task) }}</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>其他统计</h6>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>已生成报告数：</span>
+                                        <strong>{{ stats.tasks_with_reports }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>报告生成率：</span>
+                                        <strong>{{ "%.1f"|format(stats.report_generation_rate) }}%</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+{% block scripts %}
+<style>
+/* 移动端表格优化 */
+@media (max-width: 992px) {
+    /* 统计卡片响应式 */
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+    
+    /* 表格容器添加水平滚动 */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* 表格最小宽度 */
+    .table {
+        min-width: 800px;
+    }
+    
+    /* 操作列固定宽度 */
+    .table td:last-child {
+        min-width: 100px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* 卡片头部按钮组 */
+    .card-header .btn {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* 搜索框响应式 */
+    .input-group {
+        flex-wrap: nowrap;
+    }
+    
+    .input-group .form-control {
+        min-width: 150px;
+    }
+    
+    /* 分页按钮 */
+    .pagination {
+        flex-wrap: wrap;
+    }
+    
+    .page-item {
+        margin-bottom: 0.25rem;
+    }
+    
+    /* 侧边栏头部标题区域 */
+    .admin-sidebar > div:first-child {
+        display: none !important;
+    }
+}
+
+@media (max-width: 576px) {
+    /* 超小屏幕表格进一步优化 */
+    .table {
+        min-width: 600px;
+        font-size: 0.85rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    /* 按钮文字隐藏，只显示图标 */
+    .card-header .btn span:not(.bi) {
+        display: none;
+    }
+}
+</style>
+
+<script>
+    // 侧边栏切换功能
+    function switchTab(tabName) {
+        // 更新侧边栏活动状态
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        const activeSidebarItem = document.querySelector(`.sidebar-item[data-tab="${tabName}"]`);
+        if (activeSidebarItem) {
+            activeSidebarItem.classList.add('active');
+        }
+        
+        // 更新标签页
+        const tabButton = document.getElementById(tabName + '-tab');
+        const tabPane = document.getElementById(tabName);
+        if (tabButton && tabPane) {
+            // 移除所有活动状态
+            document.querySelectorAll('#adminTabs .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('show', 'active');
+            });
+            // 激活指定的标签页
+            tabButton.classList.add('active');
+            tabPane.classList.add('show', 'active');
+            
+            // 更新URL
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('tab', tabName);
+            window.history.replaceState({}, '', window.location.pathname + '?' + urlParams.toString());
+        }
+    }
+    
+    // 根据URL参数自动激活标签页
+    (function(){
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab') || 'users';
+        switchTab(tab);
+        
+        // 监听标签页切换事件，更新URL和分页链接
+        const tabButtons = document.querySelectorAll('#adminTabs button[data-bs-toggle="tab"]');
+        tabButtons.forEach(button => {
+            button.addEventListener('shown.bs.tab', function(event) {
+                const tabId = event.target.id.replace('-tab', '');
+                switchTab(tabId);
+                
+                // 更新所有分页链接中的 tab 参数
+                document.querySelectorAll('.pagination a.page-link').forEach(link => {
+                    if (link.href) {
+                        try {
+                            const linkUrl = new URL(link.href);
+                            linkUrl.searchParams.set('tab', tabId);
+                            link.href = linkUrl.toString();
+                        } catch (e) {
+                            // 如果URL解析失败，尝试字符串替换
+                            const href = link.getAttribute('href');
+                            if (href) {
+                                const newHref = href.replace(/[?&]tab=[^&]*/, '').replace(/\?/, '?').replace(/\&/, '&');
+                                const separator = newHref.includes('?') ? '&' : '?';
+                                link.setAttribute('href', newHref + separator + 'tab=' + tabId);
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    })();
+    
+    // HTML审核批量选择功能
+    (function(){
+        const selectAll = document.getElementById('selectAllTasks');
+        const checkboxes = Array.from(document.querySelectorAll('.task-checkbox'));
+        const submitBtn = document.getElementById('batchApproveBtn');
+        if (!selectAll || !submitBtn) {
+            return;
+        }
+
+        function updateButton(){
+            if (!checkboxes.length) {
+                submitBtn.disabled = true;
+                return;
+            }
+            const hasChecked = checkboxes.some(cb => cb.checked);
+            submitBtn.disabled = !hasChecked;
+        }
+
+        selectAll.addEventListener('change', function(){
+            const checked = this.checked;
+            checkboxes.forEach(cb => {
+                if (!cb.disabled) {
+                    cb.checked = checked;
+                }
+            });
+            updateButton();
+        });
+
+        checkboxes.forEach(cb => cb.addEventListener('change', function(){
+            if (!this.checked && selectAll.checked) {
+                selectAll.checked = false;
+            } else if (this.checked) {
+                const allChecked = checkboxes.every(item => item.checked || item.disabled);
+                if (allChecked) {
+                    selectAll.checked = true;
+                }
+            }
+            updateButton();
+        }));
+
+        updateButton();
+    })();
+
+    // 密码重置功能
+    function resetPassword(userId, username) {
+        if (!confirm(`确定要将用户 "${username}" 的密码重置为 123456 吗？`)) {
+            return;
+        }
+        
+        fetch(`{{ url_for('quickform.admin_reset_password') }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `user_id=${userId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 显示复制文本的模态框
+                const modal = document.createElement('div');
+                modal.className = 'modal fade show';
+                modal.style.display = 'block';
+                modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                modal.innerHTML = `
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">密码重置成功</h5>
+                                <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>用户 "${username}" 的密码已重置为：<strong>123456</strong></p>
+                                <div class="mb-3">
+                                    <label class="form-label">请复制以下信息：</label>
+                                    <textarea class="form-control" id="passwordInfo" rows="3" readonly>用户名：${username}
+密码：123456</textarea>
+                                </div>
+                                <button class="btn" 
+                                        style="background-color: #2563eb; color: white; border: none;"
+                                        onclick="copyPasswordInfo()">复制信息</button>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">关闭</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                alert('密码重置失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('密码重置失败：网络错误');
+        });
+    }
+
+    function copyPasswordInfo() {
+        const textarea = document.getElementById('passwordInfo');
+        textarea.select();
+        document.execCommand('copy');
+        alert('信息已复制到剪贴板');
+    }
+</script>
+{% endblock %}
+{% endblock %}
+

@@ -1,0 +1,50 @@
+[
+    {
+        "title": "QuickForm开源教学辅助系统介绍",
+        "author": "温州科技高级中学AI科创中心",
+        "author_link": "https://mp.weixin.qq.com/s/qmBLaMs5ZE5iq6yXVEOtgg",
+        "description": "介绍QuickForm智能表单服务的功能特点、使用方式和开源原因，解答教师常见问题。"
+    },
+    {
+        "title": "傻瓜式本地部署 QuickForm 全流程",
+        "author": "伍老师",
+        "author_link": "https://mp.weixin.qq.com/s/phkIxGv7In4M6ogfHOMq1w",
+        "description": "Windows 系统本地部署 QuickForm 的傻瓜式教程，含 Python 安装、源码获取、依赖安装、程序启动及登录使用步骤，支持表单创建、数据收集与可视化分析"
+    },
+    {
+        "title": "QuickForm，就是你苦苦寻找的课堂数据收集与分析的神器",
+        "author": "小马过洋之舟",
+        "author_link": "https://mp.weixin.qq.com/s/hX4UseMOBkv1KTrm686T1A",
+        "description": "介绍 QuickForm 作为课堂数据收集与分析工具的应用，以初中英语基础时态学情诊断为例，详述四步流程：30 秒设定诊断目标创建任务、1 分钟生成含低中高难度题型的交互答题网页、5 分钟课堂实施数据收集、1 分钟生成含整体 / 题目 / 个体分析及教学建议的报告，助力教师精准把握学情、优化教学设计"
+    },
+    {
+        "title": "案例：用 QuickForm + 交互网页实时统计课堂教学活动数据",
+        "author": "钟云晴",
+        "author_link": "https://mp.weixin.qq.com/s/tQA2CtdV0IdhLV3urSK2zQ",
+        "description": "介绍平阳县昆阳镇实验小学钟云晴老师的实践案例，通过 QuickForm 创建数据任务获取 URL，借助豆包生成《手势识别》课程评价网页并配置数据提交接口，测试回收数据后生成实时统计大屏，实现 42 名学生 4 项课堂活动评价数据的实时汇总、可视化展示与教学支持"
+    },
+    {
+        "title": "QuickForm 的初体验",
+        "author": "朱珍珍",
+        "author_link": "https://mp.weixin.qq.com/s/HTtI-lUvZLvIjwFeyJ1tlA",
+        "description": "朱珍珍受谢作如老师文章启发体验 QuickForm，分享四步操作流程：注册账号创建任务获取数据接口 URL，借助 DeepSeek 生成含两种随机出题形式的英语单词训练交互网页并配置数据提交功能，做题提交数据后通过接口地址 +“/all” 查看并保存回收数据，再利用 DeepSeek 生成可实时同步展示提交次数、最高分、正确率等信息的数据大屏，为教学学情分析提供实用工具"
+    },
+    {
+        "title": "告别数据孤岛:QuickForm让交互网页数据回收如此简单",
+        "author": "周歌",
+        "author_link": "https://mp.weixin.qq.com/s/v5IUwiTgxsg6s3TV5mAAyA",
+        "description": "介绍温州科技高级中学谢作如老师团队研发的QuickForm信息系统，解决AI生成交互网页的数据孤岛问题，教师零门槛即可通过四步实现数据回收（生成专属表单地址、优化网页提示词、实时查看数据、生成智能分析报告），并列举10个教育应用场景，助力数据驱动教学，实现技术与教育融合"
+    },
+    {
+        "title": "测试问卷怎么收集数据?用QuickForm+AI编程实现课堂测的精准反馈",
+        "author": "猫娘娘",
+        "author_link": "https://mp.weixin.qq.com/s/T49v0BfmrjIwK920qUYMVg",
+        "description": "介绍借助温州科技高中团队开发的QuickForm解决AI生成交互网页的数据孤岛问题，分享其申请URL的方法，详细阐述在豆包、Trae、Gemini3pro三种AI工具中实现Python编程基础知识测试问卷与数据看板的流程，提供可直接复用的提示词，支持学生测试数据实时提交、教师查看统计分析（参与人数、正确率、错题等），助力课堂精准反馈"
+    },
+    {
+        "title": "为你的课堂教学设计一个实时数据统计大屏",
+        "author": "谢作如",
+        "author_link": "https://mp.weixin.qq.com/s/KQzyEy7q5-Z-OO43LOgXwA",
+        "description": "谢作如回应教师需求，说明QuickForm支持课堂实时数据统计大屏功能，分享通过DeepSeek结合提示词（附JSON格式数据附件）生成数据大屏页面的方法，可展示提交人数、最高分、易错点等信息；公布QuickForm相关数据（总用户787、总任务742、总提交8042），并提及后续优化：默认返回最新3条数据，访问URL+“/all”可获取全部数据，以减轻服务器压力"
+    }
+]

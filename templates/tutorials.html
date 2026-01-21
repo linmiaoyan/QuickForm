@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ translate('nav.tutorials') }} - QuickForm{% endblock %}
+
+{% block content %}
+<style>
+.tutorial-item {
+    margin-bottom: 3rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.tutorial-header {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+}
+
+.tutorial-author {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.tutorial-author a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.tutorial-author a:hover {
+    text-decoration: underline;
+}
+
+.tutorial-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.5rem;
+}
+
+.tutorial-description {
+    color: #6b7280;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.tutorial-link {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.tutorial-link a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+    word-break: break-all;
+    display: inline-block;
+}
+
+.tutorial-link a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .tutorial-item {
+        padding: 1.5rem;
+    }
+}
+</style>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">{{ translate('nav.tutorials') if translate('nav.tutorials') != 'nav.tutorials' else '开源教程' }}</h1>
+            
+            {% if tutorials and tutorials|length > 0 %}
+                {% for tutorial in tutorials %}
+                <div class="tutorial-item">
+                    <div class="tutorial-header">
+                        <h3 class="tutorial-title">{{ tutorial.title }}</h3>
+                        <div class="tutorial-author">
+                            <strong>作者：</strong>
+                            {% if tutorial.author_link %}
+                                <a href="{{ tutorial.author_link }}" target="_blank">{{ tutorial.author }}</a>
+                            {% else %}
+                                {{ tutorial.author }}
+                            {% endif %}
+                        </div>
+                        {% if tutorial.description %}
+                        <p class="tutorial-description">{{ tutorial.description }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    {% if tutorial.author_link %}
+                    <div class="tutorial-link">
+                        <strong>教程链接：</strong><br>
+                        <a href="{{ tutorial.author_link }}" target="_blank">{{ tutorial.author_link }}</a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <p class="lead text-muted">暂无教程内容</p>
+                        <p class="text-muted">教程内容正在准备中...</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

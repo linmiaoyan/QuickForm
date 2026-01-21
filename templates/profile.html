@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ translate('profile.title') }} - QuickForm{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">{{ translate('profile.header') }}</h4>
+        </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% if user.is_certified %}
+                <div class="alert alert-success d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ translate('profile.certified') }}</strong> {{ translate('profile.certified_desc') }}
+                        {% if user.certified_at %}
+                        <span class="ms-2 text-muted">{{ translate('profile.certified_at') }}{{ user.certified_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% elif pending_cert_request %}
+                <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ translate('profile.cert_reviewing') }}</strong> {{ translate('profile.cert_reviewing_desc')|replace('{time}', pending_cert_request.created_at.strftime('%Y-%m-%d %H:%M')) }}
+                    </div>
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('quickform.certification_request') }}">{{ translate('profile.view_detail') }}</a>
+                </div>
+                {% elif last_cert_request and last_cert_request.status == -1 %}
+                <div class="alert alert-danger d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ translate('profile.cert_rejected') }}</strong> {{ translate('profile.cert_rejected_desc')|replace('{note}', last_cert_request.review_note or translate('profile.cert_rejected')) }}
+                    </div>
+                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('quickform.certification_request') }}">{{ translate('profile.reapply') }}</a>
+                </div>
+                {% else %}
+                <div class="alert alert-info d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ translate('profile.not_certified') }}</strong> {{ translate('profile.not_certified_desc') }}
+                    </div>
+                    <a class="btn btn-sm btn-primary" href="{{ url_for('quickform.certification_request') }}">{{ translate('profile.apply_cert') }}</a>
+                </div>
+                {% endif %}
+                
+                <ul class="nav nav-tabs mb-4">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="profile-tab" data-bs-toggle="tab" href="#profile" style="color: #000; font-weight: 500;">{{ translate('profile.personal_info') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="config-tab" data-bs-toggle="tab" href="#config" style="color: #000; font-weight: 500;">{{ translate('profile.ai_config') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="password-tab" data-bs-toggle="tab" href="#password" style="color: #000; font-weight: 500;">{{ translate('profile.change_password') }}</a>
+                    </li>
+                </ul>
+                
+                <div class="tab-content">
+                    <!-- 个人信息标签页 -->
+                    <div class="tab-pane fade show active" id="profile">
+                        <form method="POST" action="{{ url_for('quickform.profile') }}">
+                            <input type="hidden" name="update_profile" value="1">
+                            
+                            <div class="form-group">
+                                <label for="username" style="color: #000; font-weight: 500;">{{ translate('profile.username') }}</label>
+                                <input type="text" class="form-control" id="username" name="username" value="{{ user.username if user else current_user.username }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email" style="color: #000; font-weight: 500;">{{ translate('profile.email') }}</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email if user else current_user.email }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="school" style="color: #000; font-weight: 500;">{{ translate('profile.school') }}</label>
+                                <input type="text" class="form-control" id="school" name="school" value="{{ user.school if user else current_user.school }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="phone" style="color: #000; font-weight: 500;">{{ translate('profile.phone') }}</label>
+                                <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone if user else current_user.phone }}" required>
+                                <small class="form-text text-muted">{{ translate('profile.phone_hint') }}</small>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success mt-4">{{ translate('profile.save_info') }}</button>
+                        </form>
+                    </div>
+                    
+                    <!-- AI配置标签页 -->
+                    <div class="tab-pane fade" id="config">
+                        <form method="POST" action="{{ url_for('quickform.profile') }}">
+                            <input type="hidden" name="update_config" value="1">
+                            
+                            <div class="form-group">
+                                <label for="selected_model" style="color: #000; font-weight: 500;">{{ translate('profile.select_model') }}</label>
+                                <select class="form-control" id="selected_model" name="selected_model" required>
+                                    <option value="chat_server" {% if ai_config and ai_config.selected_model == 'chat_server' %}selected{% endif %}>{{ translate('profile.model_chat_server') }}</option>
+                                    <option value="deepseek" {% if ai_config and ai_config.selected_model == 'deepseek' %}selected{% endif %}>{{ translate('profile.model_deepseek') }}</option>
+                                    <option value="doubao" {% if ai_config and ai_config.selected_model == 'doubao' %}selected{% endif %}>{{ translate('profile.model_doubao') }}</option>
+                                    <option value="qwen" {% if ai_config and ai_config.selected_model == 'qwen' %}selected{% endif %}>{{ translate('profile.model_qwen') }}</option>
+                                </select>
+                            </div>
+                            <div id="chat_server_config" class="model-config" style="{% if not ai_config or ai_config.selected_model != 'chat_server' %}display:none;{% endif %}">
+                                <h5 class="mt-4 mb-3">{{ translate('profile.chat_server_config') }}</h5>
+                                <div class="form-group mb-2">
+                                    <label class="form-label" style="color: #000; font-weight: 500;">{{ translate('profile.api_url') }}</label>
+                                    <input type="text" class="form-control" name="chat_server_api_url" placeholder="{{ translate('profile.api_url_placeholder') }}" value="{{ ai_config.chat_server_api_url if ai_config else '' }}">
+                                    <small class="form-text text-muted">{{ translate('profile.api_url_hint') }}</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" style="color: #000; font-weight: 500;">{{ translate('profile.api_token') }}</label>
+                                    <input type="text" class="form-control" name="chat_server_api_token" placeholder="{{ translate('profile.api_token_placeholder') }}" value="{{ ai_config.chat_server_api_token if ai_config else '' }}">
+                                    <small class="form-text text-muted">{{ translate('profile.api_token_hint') }}</small>
+                                </div>
+                            </div>
+
+                            <div id="deepseek_config" class="model-config" style="{% if not ai_config or ai_config.selected_model != 'deepseek' %}display:none;{% endif %}">
+                                <h5 class="mt-4 mb-3">{{ translate('profile.deepseek_config') }}</h5>
+                                <div class="form-group">
+                                    <label for="deepseek_api_key" style="color: #000; font-weight: 500;">{{ translate('profile.deepseek_api_key') }}</label>
+                                    <input type="password" class="form-control api-key-input" id="deepseek_api_key" name="deepseek_api_key" value="{{ ai_config.deepseek_api_key if ai_config and ai_config.deepseek_api_key else '' }}">
+                                    <small class="form-text text-muted">{{ translate('profile.deepseek_api_key_hint') }}</small>
+                                </div>
+                            </div>
+                            
+                            <div id="doubao_config" class="model-config" style="{% if not ai_config or ai_config.selected_model != 'doubao' %}display:none;{% endif %}">
+                                <h5 class="mt-4 mb-3">{{ translate('profile.doubao_config') }}</h5>
+                                <div class="form-group">
+                                    <label for="doubao_api_key" style="color: #000; font-weight: 500;">{{ translate('profile.doubao_api_key') }}</label>
+                                    <input type="password" class="form-control api-key-input" id="doubao_api_key" name="doubao_api_key" value="{{ ai_config.doubao_api_key if ai_config and ai_config.doubao_api_key else '' }}">
+                                </div>
+                            </div>
+                            
+                            <div id="qwen_config" class="model-config" style="{% if not ai_config or ai_config.selected_model != 'qwen' %}display:none;{% endif %}">
+                                <h5 class="mt-4 mb-3">{{ translate('profile.qwen_config') }}</h5>
+                                <div class="form-group">
+                                    <label for="qwen_api_key" style="color: #000; font-weight: 500;">{{ translate('profile.qwen_api_key') }}</label>
+                                    <input type="password" class="form-control api-key-input" id="qwen_api_key" name="qwen_api_key" value="{{ ai_config.qwen_api_key if ai_config and ai_config.qwen_api_key else '' }}">
+                                    <small class="form-text text-muted">{{ translate('profile.qwen_api_key_hint') }}</small>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success mt-4">保存配置</button>
+
+                            <div class="border rounded p-3 mt-4 bg-light">
+                                <h6 class="mb-2">API 连通性测试</h6>
+                                <p class="small text-muted mb-3">保存配置后，可通过下方快速测试按钮确认模型接口是否可正常响应。</p>
+                                <label for="test-ai-prompt" class="form-label small text-muted">测试提示词（可选）</label>
+                                <textarea id="test-ai-prompt" class="form-control" rows="2" placeholder="例如：请回复“OK”，用于连通性测试。"></textarea>
+                                <div class="d-flex align-items-center gap-2 mt-3">
+                                    <button type="button" class="btn btn-outline-primary" id="test-ai-btn">测试接口</button>
+                                    <div class="spinner-border spinner-border-sm text-primary d-none" id="test-ai-spinner" role="status">
+                                        <span class="visually-hidden">测试中…</span>
+                                    </div>
+                                </div>
+                                <div id="test-ai-result" class="mt-2 small"></div>
+                                <p class="small text-muted mt-3 mb-0">若修改了上方配置，请先点击“保存配置”，再进行连通性测试。</p>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- 密码修改标签页 -->
+                    <div class="tab-pane fade" id="password">
+                        <form method="POST" action="{{ url_for('quickform.profile') }}">
+                            <input type="hidden" name="change_password" value="1">
+                            
+                            <div class="form-group">
+                                <label for="current_password" style="color: #000; font-weight: 500;">{{ translate('profile.current_password') }}</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="new_password" style="color: #000; font-weight: 500;">{{ translate('profile.new_password') }}</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                <small class="form-text text-muted">{{ translate('profile.new_password_hint') }}</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="confirm_password" style="color: #000; font-weight: 500;">{{ translate('profile.confirm_password') }}</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success mt-4">{{ translate('profile.change_password_btn') }}</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header ">
+                <h5 class="mb-0">{{ translate('profile.config_guide_title') }}</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ translate('profile.config_guide_desc1') }}</p>
+                <p>{{ translate('profile.config_guide_desc2') }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 由于上面已用style控制display，重复JS会与style或初始状态冲突，这里统一下逻辑：
+document.addEventListener('DOMContentLoaded', function(){
+    var sel = document.getElementById('selected_model');
+    var configs = {
+        chat_server: document.getElementById('chat_server_config'),
+        deepseek: document.getElementById('deepseek_config'),
+        doubao: document.getElementById('doubao_config'),
+        qwen: document.getElementById('qwen_config')
+    };
+    function updateShow(){
+        var v = sel.value;
+        Object.keys(configs).forEach(function(k){
+            if(configs[k]) configs[k].style.display = (k === v) ? '' : 'none';
+        });
+    }
+    sel.addEventListener('change', updateShow);
+    updateShow();
+
+    var testBtn = document.getElementById('test-ai-btn');
+    var promptInput = document.getElementById('test-ai-prompt');
+    var resultEl = document.getElementById('test-ai-result');
+    var spinner = document.getElementById('test-ai-spinner');
+    if (testBtn && resultEl) {
+        testBtn.addEventListener('click', function(){
+            if (!spinner.classList.contains('d-none')) {
+                return;
+            }
+            resultEl.textContent = '';
+            spinner.classList.remove('d-none');
+            testBtn.disabled = true;
+            var payload = { prompt: promptInput ? promptInput.value : '' };
+            fetch('{{ url_for('quickform.test_ai_api') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(async function(resp){
+                var text = await resp.text();
+                var data;
+                try { data = JSON.parse(text); } catch (e) { data = { success: false, message: text || '{{ translate("js.interface_no_response") }}' }; }
+                if (!resp.ok || !data.success) {
+                    var msg = data && data.message ? data.message : '{{ translate("js.test_failed") }}';
+                    throw new Error(msg);
+                }
+                var model = data.model_label || data.model || '';
+                var preview = data.response_preview || '';
+                resultEl.classList.remove('text-danger');
+                resultEl.classList.add('text-success');
+                resultEl.innerHTML = '模型：<strong>' + model + '</strong>，响应：' + (preview ? preview : '{{ translate("js.test_success") }}');
+            })
+            .catch(function(err){
+                resultEl.classList.remove('text-success');
+                resultEl.classList.add('text-danger');
+                resultEl.textContent = '❌ ' + (err.message || '{{ translate("js.test_error") }}');
+            })
+            .finally(function(){
+                spinner.classList.add('d-none');
+                testBtn.disabled = false;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

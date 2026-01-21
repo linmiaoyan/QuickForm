@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ translate('nav.community') }} - QuickForm{% endblock %}
+
+{% block content %}
+<style>
+.post-item {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.post-author {
+    font-weight: 600;
+    color: #111827;
+}
+
+.post-time {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.post-content {
+    color: #374151;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.post-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.post-form {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.post-form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+.issue-collector {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.issue-collector-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.issue-collector-text {
+    flex: 1;
+}
+
+.issue-collector-text h4 {
+    color: #111827;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.issue-collector-text p {
+    color: #6b7280;
+    margin-bottom: 0;
+    font-size: 0.95rem;
+}
+
+.issue-collector-link {
+    margin-left: 1.5rem;
+}
+
+.issue-collector-link .btn {
+    background: #2563eb;
+    color: white;
+    border: none;
+    font-weight: 500;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.issue-collector-link .btn:hover {
+    background: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .issue-collector-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .issue-collector-link {
+        margin-left: 0;
+        margin-top: 1rem;
+        width: 100%;
+    }
+    
+    .issue-collector-link .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12 col-lg-8 mx-auto">
+            <h1 class="mb-4">{{ translate('nav.community') if translate('nav.community') != 'nav.community' else '项目交流' }}</h1>
+            
+            <!-- QuickForm问题收集表 -->
+            <div class="issue-collector">
+                <div class="issue-collector-content">
+                    <div class="issue-collector-text">
+                        <h4>QuickForm问题收集表</h4>
+                        <p>遇到问题或有建议？点击按钮填写问题收集表，我们会及时处理您的反馈。</p>
+                    </div>
+                    <div class="issue-collector-link">
+                        <a href="https://my.feishu.cn/docx/NCoSdsSzSoLZFbxNmv1co52jn4e" target="_blank" class="btn">
+                            <i class="bi bi-box-arrow-up-right"></i> 填写问题收集表
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 留言表单 -->
+            {% if current_user.is_authenticated %}
+            <div class="post-form">
+                <h3 class="mb-3">发表留言</h3>
+                <form method="POST" action="{{ url_for('quickform.create_post') }}">
+                    <div class="mb-3">
+                        <label for="content" class="form-label">留言内容</label>
+                        <textarea 
+                            class="form-control" 
+                            id="content" 
+                            name="content" 
+                            rows="5" 
+                            placeholder="请输入您的留言或问题..." 
+                            required
+                            maxlength="2000"></textarea>
+                        <small class="text-muted">最多2000字符</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">发布留言</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                请先 <a href="{{ url_for('quickform.login') }}">登录</a> 后发表留言
+            </div>
+            {% endif %}
+            
+            <!-- 留言列表 -->
+            <h3 class="mb-3">留言列表</h3>
+            {% if posts and posts|length > 0 %}
+                {% for post in posts %}
+                <div class="post-item">
+                    <div class="post-header">
+                        <div>
+                            <span class="post-author">{{ post.user.username }}</span>
+                            {% if post.user.school %}
+                                <span class="text-muted" style="font-size: 0.875rem; margin-left: 0.5rem;">{{ post.user.school }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="post-time">{{ post.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                            {% if current_user.is_admin() %}
+                            <form method="POST" action="{{ url_for('quickform.delete_post', post_id=post.id) }}" style="display: inline; margin-left: 1rem;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('确定要删除这条留言吗？')">删除</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="post-content">{{ post.content }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p class="lead">暂无留言</p>
+                    <p class="text-muted">成为第一个留言的用户吧！</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
