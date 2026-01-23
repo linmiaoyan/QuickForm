@@ -22,11 +22,11 @@ app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key_here')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
 # 国际化支持
-from core.i18n import translate, get_locale
+from core.i18n import translate, get_locale, get_locale_name
 @app.context_processor
 def inject_locale():
     """注入语言环境到模板"""
-    return dict(get_locale=get_locale, translate=translate)
+    return dict(get_locale=get_locale, translate=translate, get_locale_name=get_locale_name)
 
 # 初始化扩展
 login_manager = LoginManager()

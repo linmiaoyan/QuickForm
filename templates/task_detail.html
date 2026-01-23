@@ -33,7 +33,7 @@
                     <p class="mb-0"><strong>{{ translate('task_detail.created_at') }}：</strong>{{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                     <p class="mb-0"><strong>{{ translate('task_detail.submission_count') }}：</strong>{{ total_submissions }}</p>
                     <p class="mb-0">
-                        <strong>任务来源：</strong>
+                        <strong>{{ translate('task_detail.task_source') }}</strong>
                         {% if task.organization_id %}
                         <span class="badge" style="background-color: #8b5cf6; color: white;">
                             <i class="bi bi-building"></i> {{ task.organization.name }}
@@ -45,18 +45,18 @@
                         {% endif %}
                     </p>
                     <p class="mb-0">
-                        <strong>共享状态：</strong>
+                        <strong>{{ translate('task_detail.sharing_status') }}</strong>
                         {% if task.sharing_type == 'organization' %}
                         <span class="badge" style="background-color: #8b5cf6; color: white;">
-                            <i class="bi bi-people-fill"></i> 组织共享
+                            <i class="bi bi-people-fill"></i> {{ translate('task_detail.organization_shared') }}
                         </span>
                         {% elif task.sharing_type == 'shared' %}
                         <span class="badge" style="background-color: #10b981; color: white;">
-                            <i class="bi bi-share-fill"></i> 已共享
+                            <i class="bi bi-share-fill"></i> {{ translate('task_detail.shared') }}
                         </span>
                         {% else %}
                         <span class="badge" style="background-color: #93c5fd; color: #ffffff;">
-                            <i class="bi bi-lock-fill"></i> 私有
+                            <i class="bi bi-lock-fill"></i> {{ translate('task_detail.private') }}
                         </span>
                         {% endif %}
                     </p>
@@ -128,7 +128,7 @@
             <div class="card-header" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#shareManagement" aria-expanded="false" aria-controls="shareManagement">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0" style="color: white; font-weight: 600;">
-                        <i class="bi bi-share"></i> 共享管理
+                        <i class="bi bi-share"></i> {{ translate('task_detail.share_management') }}
                     </h5>
                     <i class="bi bi-chevron-down" style="color: white; transition: transform 0.3s;" id="shareManagementIcon"></i>
                 </div>
@@ -137,10 +137,10 @@
                 <div class="card-body">
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label"><strong>分配到组织</strong></label>
+                        <label class="form-label"><strong>{{ translate('task_detail.assign_to_org') }}</strong></label>
                         <form method="POST" action="{{ url_for('quickform.assign_task_to_org', task_id=task.id) }}" class="d-flex gap-2">
                             <select name="organization_id" class="form-select" required>
-                                <option value="">选择组织...</option>
+                                <option value="">{{ translate('task_detail.select_org') }}</option>
                                 {% for org in user_organizations %}
                                 <option value="{{ org.id }}" {% if task.organization_id == org.id %}selected{% endif %}>
                                     {{ org.name }}
@@ -148,31 +148,31 @@
                                 {% endfor %}
                             </select>
                             <button type="submit" class="btn btn-primary" style="white-space: nowrap;">
-                                <i class="bi bi-check"></i> 分配
+                                <i class="bi bi-check"></i> {{ translate('task_detail.assign') }}
                             </button>
                             {% if task.organization_id %}
                             <button type="button" class="btn btn-outline-secondary" onclick="removeFromOrg({{ task.id }})" style="white-space: nowrap;">
-                                <i class="bi bi-x"></i> 移除
+                                <i class="bi bi-x"></i> {{ translate('task_detail.remove') }}
                             </button>
                             {% endif %}
                         </form>
-                        <small class="text-muted">将任务分配到组织后，组织成员可以查看、编辑、下载数据、生成报告</small>
+                        <small class="text-muted">{{ translate('task_detail.assign_hint') }}</small>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label"><strong>共享给个人</strong></label>
+                        <label class="form-label"><strong>{{ translate('task_detail.share_to_user') }}</strong></label>
                         <form method="POST" action="{{ url_for('quickform.share_task_to_user', task_id=task.id) }}" class="d-flex gap-2" id="shareUserForm">
-                            <input type="text" name="username" class="form-control" placeholder="输入用户名" required>
+                            <input type="text" name="username" class="form-control" placeholder="{{ translate('task_detail.enter_username') }}" required>
                             <button type="submit" class="btn btn-success" style="white-space: nowrap;">
-                                <i class="bi bi-person-plus"></i> 添加
+                                <i class="bi bi-person-plus"></i> {{ translate('task_detail.add') }}
                             </button>
                         </form>
-                        <small class="text-muted">共享后，对方可以查看、编辑、下载数据、生成报告</small>
+                        <small class="text-muted">{{ translate('task_detail.share_hint') }}</small>
                     </div>
                 </div>
                 
                 {% if shared_users and shared_users|length > 0 %}
                 <div class="mt-3">
-                    <strong class="d-block mb-2">已共享给：</strong>
+                    <strong class="d-block mb-2">{{ translate('task_detail.shared_to') }}</strong>
                     <div class="d-flex flex-wrap gap-2">
                         {% for share in shared_users %}
                         <div class="badge" style="background-color: #e0e7ff; color: #3730a3; font-size: 0.9rem; padding: 0.5rem 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -207,7 +207,7 @@
                 <div class="mb-3">
                     <label class="form-label"><strong>{{ translate('task_detail.data_url_label') }}</strong></label>
                     <div class="input-group">
-                        <input type="text" class="form-control" readonly value="{{ request.host_url|replace('http://', 'https://') }}quickform/api/submit/{{ task.task_id }}" id="post-url">
+                        <input type="text" class="form-control" readonly value="{{ request.host_url|replace('https://', 'http://') }}api/{{ task.task_id }}" id="post-url">
                         <button class="btn btn-outline-secondary" onclick="copyToClipboard('post-url')" style="font-weight: 500;">
                             <i class="bi bi-clipboard"></i>{{ translate('task_detail.copy_url') }}
                         </button>
@@ -218,7 +218,7 @@
                 <div class="mb-3">
                     <label class="form-label"><strong>{{ translate('task_detail.simple_prompt_label') }}</strong></label>
                     <div class="input-group">
-                        <textarea class="form-control" id="simple-prompt-text" rows="3" readonly style="font-family: 'Courier New', monospace; font-size: 13px;">{{ translate('task_detail.simple_prompt_text') }} '{{ request.host_url|replace('http://', 'https://') }}quickform/api/submit/{{ task.task_id }}' {{ translate('task_detail.simple_prompt_send') }}</textarea>
+                        <textarea class="form-control" id="simple-prompt-text" rows="3" readonly style="font-family: 'Courier New', monospace; font-size: 13px;">{{ translate('task_detail.simple_prompt_text') }} '{{ request.host_url|replace('https://', 'http://') }}api/{{ task.task_id }}' {{ translate('task_detail.simple_prompt_send') }}</textarea>
                         <button class="btn btn-outline-primary" onclick="copyToClipboardText('simple-prompt-text')" style="font-weight: 500;">
                             <i class="bi bi-clipboard"></i>{{ translate('task_detail.copy') }}
                         </button>
@@ -241,7 +241,7 @@
 
 <script>
 function sendTestData() {
-    const url = '{{ request.host_url|replace('http://', 'https://') }}quickform/api/submit/{{ task.task_id }}';
+    const url = '{{ request.host_url|replace('https://', 'http://') }}api/{{ task.task_id }}';
     const data = {"{{ translate('dashboard.code_example_field') }}1": "{{ translate('dashboard.code_example_value') }}1", "{{ translate('dashboard.code_example_field') }}2": "{{ translate('dashboard.code_example_value') }}2"};
     document.getElementById('send-result').textContent = "{{ translate('dashboard.code_example_submitting') }}";
     fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
@@ -276,9 +276,9 @@ function sendTestData() {
         <!-- 提交数据列表 -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0" style="color: white; font-weight: 600;">提交数据列表</h5>
+                <h5 class="mb-0" style="color: white; font-weight: 600;">{{ translate('task_detail.submission_list') }}</h5>
                 {% if submissions %}
-                <button type="button" class="btn btn-danger btn-sm" onclick="deleteAllData()">🗑 删除全部数据</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="deleteAllData()">🗑 {{ translate('task_detail.delete_all') }}</button>
                 {% endif %}
             </div>
             <div class="card-body">
@@ -288,8 +288,8 @@ function sendTestData() {
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>提交时间</th>
-                                <th>数据内容</th>
+                                <th>{{ translate('task_detail.submission_time') }}</th>
+                                <th>{{ translate('task_detail.data_content') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -306,13 +306,13 @@ function sendTestData() {
                                             data-sub-time="{{ sub.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}"
                                             data-sub-data='{{ sub.data | tojson | safe }}'
                                             onclick="openDataModal(this);">
-                                            查看数据
+                                            {{ translate('task_detail.view_data') }}
                                         </button>
                                         <button 
                                             type="button" 
                                             class="btn btn-sm btn-danger"
                                             onclick="deleteSingleData({{ sub.id }})">
-                                            🗑 删除
+                                            🗑 {{ translate('task_detail.delete') }}
                                         </button>
                                     </div>
                                 </td>
@@ -324,10 +324,10 @@ function sendTestData() {
                 
                 <!-- 分页 -->
                 <div class="mt-4">
-                    <p class="text-center mb-2">共 {{ total_submissions }} 条记录</p>
+                    <p class="text-center mb-2">{{ translate('task_detail.total_records')|replace('{count}', total_submissions|string) }}</p>
                     {% if pagination.pages > 1 %}
                     {% set page_links = pagination.links if pagination.links is defined else range(1, pagination.pages + 1) %}
-                    <nav aria-label="提交数据分页">
+                    <nav aria-label="{{ translate('task_detail.pagination') }}">
                         <ul class="pagination justify-content-center">
                             <li class="page-item {% if pagination.page <= 1 %}disabled{% endif %}">
                                 <a class="page-link" href="{{ url_for('quickform.task_detail', task_id=task.id, page=pagination.page - 1, per_page=pagination.per_page) }}" aria-label="上一页">
@@ -344,7 +344,7 @@ function sendTestData() {
                                 {% endif %}
                             {% endfor %}
                             <li class="page-item {% if pagination.page >= pagination.pages %}disabled{% endif %}">
-                                <a class="page-link" href="{{ url_for('quickform.task_detail', task_id=task.id, page=pagination.page + 1, per_page=pagination.per_page) }}" aria-label="下一页">
+                                <a class="page-link" href="{{ url_for('quickform.task_detail', task_id=task.id, page=pagination.page + 1, per_page=pagination.per_page) }}" aria-label="{{ translate('task_detail.next_page') }}">
                                     <span aria-hidden="true">&raquo;</span>
                                 </a>
                             </li>
@@ -360,8 +360,8 @@ function sendTestData() {
                             <path d="M6.5 16a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-1H6.5v1zm-2-1a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-1H4.5v1z"/>
                         </svg>
                     </div>
-                    <h4>暂无提交数据</h4>
-                    <p class="text-muted mb-4">当用户通过表单提交数据后，将在这里显示</p>
+                    <h4>{{ translate('task_detail.no_submissions') }}</h4>
+                    <p class="text-muted mb-4">{{ translate('task_detail.no_submissions_desc') }}</p>
                 </div>
                 {% endif %}
             </div>

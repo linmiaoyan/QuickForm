@@ -105,16 +105,16 @@
     <div>
         <h2>{{ translate('task_detail.edit_task') }}</h2>
         <div class="task-id-badge">
-            <span>{{ task.title }} - 任务ID:</span>
+            <span>{{ task.title }} - {{ translate('edit_task.task_id') }}:</span>
             <input type="text" value="{{ task.task_id }}" readonly style="background: rgba(255,255,255,0.3); border: none; color: white; border-radius: 4px; padding: 0.25rem 0.5rem; width: 100px; font-size: 0.9rem;">
         </div>
     </div>
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         {% if current_user.is_admin() %}
-        <a href="{{ url_for('quickform.admin_panel') }}" class="btn btn-light btn-sm" style="font-weight: 500;">管理员面板</a>
+        <a href="{{ url_for('quickform.admin_panel') }}" class="btn btn-light btn-sm" style="font-weight: 500;">{{ translate('nav.admin_panel') }}</a>
         {% endif %}
-        <a href="{{ url_for('quickform.index') }}" class="btn btn-light btn-sm" style="font-weight: 500;">首页</a>
-        <a href="{{ url_for('quickform.logout') }}" class="btn btn-light btn-sm" style="font-weight: 500;">退出</a>
+        <a href="{{ url_for('quickform.index') }}" class="btn btn-light btn-sm" style="font-weight: 500;">{{ translate('nav.home') }}</a>
+        <a href="{{ url_for('quickform.logout') }}" class="btn btn-light btn-sm" style="font-weight: 500;">{{ translate('nav.logout') }}</a>
     </div>
 </div>
 
@@ -125,7 +125,7 @@
             <!-- 基础信息卡片 -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0" style="color: white; font-weight: 600;">基础信息</h5>
+                    <h5 class="mb-0" style="color: white; font-weight: 600;">{{ translate('edit_task.basic_info') }}</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-4">
@@ -134,26 +134,26 @@
                     </div>
                     <div class="mb-4">
                         <label for="description" class="form-label">{{ translate('create_task.description') }}</label>
-                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="请输入任务描述（可选）">{{ task.description }}</textarea>
+                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="{{ translate('create_task.description_placeholder') }}">{{ task.description }}</textarea>
                     </div>
                     
                     <!-- 状态选择 -->
                     <div class="mb-3">
-                        <label class="form-label">状态</label>
+                        <label class="form-label">{{ translate('edit_task.status') }}</label>
                         <div class="status-badge-selectable">
                             <input type="radio" name="status" value="running" id="status-running" class="d-none" checked>
-                            <label for="status-running" class="status-option running active">运行中</label>
+                            <label for="status-running" class="status-option running active">{{ translate('edit_task.status_running') }}</label>
                             <input type="radio" name="status" value="pending" id="status-pending" class="d-none">
-                            <label for="status-pending" class="status-option pending">待审核</label>
+                            <label for="status-pending" class="status-option pending">{{ translate('edit_task.status_pending') }}</label>
                         </div>
                     </div>
                     
                     <!-- 可见性选择 -->
                     <div class="mb-3">
-                        <label class="form-label">可见性</label>
+                        <label class="form-label">{{ translate('edit_task.visibility') }}</label>
                         <select class="form-select" name="visibility">
-                            <option value="private" selected>私有</option>
-                            <option value="public">公开</option>
+                            <option value="private" selected>{{ translate('edit_task.visibility_private') }}</option>
+                            <option value="public">{{ translate('edit_task.visibility_public') }}</option>
                         </select>
                     </div>
                 </div>
@@ -161,13 +161,13 @@
                     <!-- HTML文件上传卡片 -->
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h5 class="mb-0" style="color: white; font-weight: 600;">HTML文件上传 (可选，支持多文件)</h5>
+                            <h5 class="mb-0" style="color: white; font-weight: 600;">{{ translate('edit_task.html_upload') }}</h5>
                         </div>
                         <div class="card-body">
                             <!-- 已上传文件列表 -->
                             {% if html_files and html_files|length > 0 %}
                             <div class="mb-3">
-                                <label class="form-label"><strong>已上传的HTML文件：</strong></label>
+                                <label class="form-label"><strong>{{ translate('edit_task.uploaded_files') }}</strong></label>
                                 <div class="d-flex flex-column gap-2" id="uploaded-files-list">
                                     {% for file in html_files %}
                                     <div class="alert alert-success mb-0 d-flex justify-content-between align-items-center">
@@ -196,25 +196,25 @@
                                  onclick="document.getElementById('html-file-input-edit').click()">
                                 <input type="file" id="html-file-input-edit" name="files" accept=".html,.htm" multiple style="display: none;" onchange="handleFileSelectEdit(event)">
                                 <div id="upload-text-edit">
-                                    <p class="mb-2" style="color: #6b7280; font-weight: 500; margin: 0;">拖拽 HTML/HTM 文件到这里</p>
-                                    <p class="mb-3" style="color: #9ca3af; font-size: 0.875rem; margin: 0;">或点击选择文件（最多2个）</p>
-                                    <button type="button" class="btn btn-primary btn-sm">选择文件</button>
+                                    <p class="mb-2" style="color: #6b7280; font-weight: 500; margin: 0;">{{ translate('edit_task.drag_drop') }}</p>
+                                    <p class="mb-3" style="color: #9ca3af; font-size: 0.875rem; margin: 0;">{{ translate('edit_task.click_select') }}</p>
+                                    <button type="button" class="btn btn-primary btn-sm">{{ translate('edit_task.select_file') }}</button>
                                 </div>
                                 <div id="selected-files-preview" style="display: none; width: 100%;">
-                                    <p class="mb-2" style="color: #10b981; font-weight: 500;">✓ 已选择文件：</p>
+                                    <p class="mb-2" style="color: #10b981; font-weight: 500;">✓ {{ translate('edit_task.selected_files') }}</p>
                                     <ul id="selected-files-list" class="list-unstyled mb-0 text-start" style="font-size: 0.9rem; color: #6b7280;"></ul>
                                 </div>
                             </div>
                             <small class="form-text text-muted d-block mt-2" style="color: #9ca3af;">
-                                <i class="bi bi-info-circle"></i> 最多上传2个HTML/HTM文件，单个文件最大16MB。文件会在生成智能报告时传入AI模型。
+                                <i class="bi bi-info-circle"></i> {{ translate('edit_task.upload_hint') }}
                             </small>
                         </div>
                     </div>
                     
                     <!-- 底部操作按钮 -->
                     <div class="d-flex justify-content-end gap-2" style="position: sticky; bottom: 1rem; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); margin-top: 1rem;">
-                        <a href="{{ url_for('quickform.task_detail', task_id=task.id) }}" class="btn btn-outline-primary">取消</a>
-                        <button type="submit" id="submit-btn" class="btn btn-primary">保存修改</button>
+                        <a href="{{ url_for('quickform.task_detail', task_id=task.id) }}" class="btn btn-outline-primary">{{ translate('common.cancel') }}</a>
+                        <button type="submit" id="submit-btn" class="btn btn-primary">{{ translate('common.save') }}</button>
                     </div>
                 </form>
             </div>
@@ -223,33 +223,33 @@
             <div>
                 <div class="card mb-4" style="position: sticky; top: 1rem;">
                     <div class="card-header">
-                        <h5 class="mb-0" style="color: white; font-weight: 600;">提示与预览</h5>
+                        <h5 class="mb-0" style="color: white; font-weight: 600;">{{ translate('edit_task.tips_preview') }}</h5>
                     </div>
                     <div class="card-body">
                         <ul class="list-unstyled mb-4" style="color: #111827; line-height: 1.8;">
-                            <li class="mb-2">• 修改任务后，提交URL会自动更新</li>
-                            <li class="mb-2">• 可以在任务详情页查看数据分析报告</li>
-                            <li class="mb-2">• 建议任务标题简洁明了，便于识别</li>
+                            <li class="mb-2">• {{ translate('edit_task.url_auto_update') }}</li>
+                            <li class="mb-2">• {{ translate('edit_task.view_report') }}</li>
+                            <li class="mb-2">• {{ translate('edit_task.title_hint') }}</li>
                         </ul>
                         
                         <div class="mb-4">
-                            <label class="form-label" style="font-weight: 600; color: #111827;">提交URL (示例)</label>
+                            <label class="form-label" style="font-weight: 600; color: #111827;">{{ translate('edit_task.submit_url_example') }}</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" readonly value="{{ request.host_url|replace('http://', 'https://') }}quickform/api/submit/{{ task.task_id }}" style="background: #f9fafb; font-size: 0.875rem;">
+                                <input type="text" class="form-control" readonly value="{{ request.host_url|replace('https://', 'http://') }}api/{{ task.task_id }}" style="background: #f9fafb; font-size: 0.875rem;">
                             </div>
-                            <small class="text-muted" style="color: #9ca3af; font-size: 0.75rem;">复制按钮可放在右侧(预览页略)。</small>
+                            <small class="text-muted" style="color: #9ca3af; font-size: 0.75rem;">{{ translate('edit_task.copy_hint') }}</small>
                         </div>
                         
                         <div>
-                            <label class="form-label" style="font-weight: 600; color: #111827;">最近修改</label>
+                            <label class="form-label" style="font-weight: 600; color: #111827;">{{ translate('edit_task.recent_changes') }}</label>
                             <ul class="recent-changes">
                                 <li>
                                     <div style="color: #111827; font-weight: 500;">2024-01-15 14:30</div>
-                                    <div style="color: #6b7280; font-size: 0.875rem;">更新描述</div>
+                                    <div style="color: #6b7280; font-size: 0.875rem;">{{ translate('edit_task.update_description') }}</div>
                                 </li>
                                 <li>
                                     <div style="color: #111827; font-weight: 500;">2024-01-14 10:20</div>
-                                    <div style="color: #6b7280; font-size: 0.875rem;">重新上传 HTML</div>
+                                    <div style="color: #6b7280; font-size: 0.875rem;">{{ translate('edit_task.reupload_html') }}</div>
                                 </li>
                             </ul>
                         </div>
@@ -284,7 +284,7 @@
     
     // 删除单个HTML文件
     window.removeHtmlFile = function(savedName) {
-        if (!confirm('确定要删除这个HTML文件吗？')) {
+        if (!confirm('{{ translate("js.delete_file_confirm") }}')) {
             return;
         }
         
@@ -332,7 +332,7 @@
         
         // 限制最多2个文件
         if (totalFiles > 2) {
-            alert(`最多只能上传2个HTML文件！\n当前已有 ${existingFiles} 个文件，您选择了 ${files.length} 个新文件。\n\n请先删除已有文件或减少选择的文件数量。`);
+            alert(`{{ translate('js.max_files_exceeded')|replace('{existing}', '${existingFiles}')|replace('{selected}', '${files.length}') }}`);
             e.target.value = ''; // 清空文件选择
             return;
         }
@@ -366,7 +366,7 @@
             // 检查文件大小
             for (let file of files) {
                 if (file.size > 16 * 1024 * 1024) {
-                    alert(`文件 ${file.name} 大小超过16MB限制`);
+                    alert(`{{ translate('js.file_size_exceeded')|replace('{name}', '${file.name}') }}`);
                     return false;
                 }
             }
@@ -383,7 +383,7 @@
                 const reader = new FileReader();
                 
                 reader.onerror = function() {
-                    alert(`文件 ${file.name} 读取失败`);
+                    alert(`{{ translate('js.file_read_failed')|replace('{name}', '${file.name}') }}`);
                     submitBtn.disabled = false;
                     submitBtn.textContent = '保存修改';
                 };

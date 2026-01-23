@@ -250,7 +250,7 @@ def switch_lang(lang):
     """切换语言"""
     from core.i18n import set_locale
     if set_locale(lang):
-        flash('语言已切换', 'success') if lang == 'zh' else flash('Language switched', 'success')
+        flash('语言已切换', 'success') if lang == 'zh-simple' else flash('Language switched', 'success')
     return redirect(request.referrer or url_for('quickform.index'))
 
 @quickform_bp.route('/docs')
@@ -1030,7 +1030,7 @@ SUBMIT_BLACKLIST_DURATION = 300  # seconds
 rate_limit_cache = {}
 
 
-@quickform_bp.route('/api/submit/<string:task_id>', methods=['GET', 'POST', 'OPTIONS'])
+@quickform_bp.route('/api/<string:task_id>', methods=['GET', 'POST', 'OPTIONS'])
 def submit_form(task_id):
     """表单提交API - 支持GET查询和POST提交"""
     if request.method == 'OPTIONS':
@@ -1188,7 +1188,7 @@ def _rate_limit_response(task_id, client_ip, ts, db):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response, 429
 
-@quickform_bp.route('/api/submit/<string:task_id>/all', methods=['GET', 'OPTIONS'])
+@quickform_bp.route('/api/<string:task_id>/all', methods=['GET', 'OPTIONS'])
 def submit_form_all(task_id):
     """获取任务的全部提交数据"""
     if request.method == 'OPTIONS':

@@ -446,10 +446,11 @@
                     <!-- 语言切换 -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-globe"></i> {{ '中文' if get_locale() == 'zh' else 'English' }}
+                            <i class="bi bi-globe"></i> {{ get_locale_name(get_locale()) }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('quickform.switch_lang', lang='zh') }}">中文</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('quickform.switch_lang', lang='zh-simple') }}">简体中文</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('quickform.switch_lang', lang='zh-TW') }}">繁體中文</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('quickform.switch_lang', lang='en') }}">English</a></li>
                         </ul>
                     </li>
