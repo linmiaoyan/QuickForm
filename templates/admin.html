@@ -1,60 +1,60 @@
 {% extends 'base.html' %}
 
-{% block title %}管理员面板 - QuickForm{% endblock %}
+{% block title %}{{ translate('admin.title') }} - QuickForm{% endblock %}
 
 {% block content %}
 <div class="admin-layout">
     <!-- 侧边栏 -->
     <div class="admin-sidebar">
         <div style="padding: 1.5rem 1rem 1rem 1rem; border-bottom: 1px solid #e5e7eb;">
-            <h6 style="font-weight: 600; color: #6b7280; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">导航</h6>
+            <h6 style="font-weight: 600; color: #6b7280; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">{{ translate('admin.navigation') }}</h6>
         </div>
         <a href="#users" class="sidebar-item active" data-tab="users" onclick="switchTab('users'); return false;">
-            <i class="bi bi-people" style="margin-right: 0.75rem;"></i> 用户管理
+            <i class="bi bi-people" style="margin-right: 0.75rem;"></i> {{ translate('admin.user_management') }}
         </a>
         <a href="#tasks" class="sidebar-item" data-tab="tasks" onclick="switchTab('tasks'); return false;">
-            <i class="bi bi-list-task" style="margin-right: 0.75rem;"></i> 任务报表
+            <i class="bi bi-list-task" style="margin-right: 0.75rem;"></i> {{ translate('admin.task_report') }}
         </a>
         <a href="#html-review" class="sidebar-item" data-tab="html-review" onclick="switchTab('html-review'); return false;">
-            <i class="bi bi-file-earmark-code" style="margin-right: 0.75rem;"></i> HTML审核
+            <i class="bi bi-file-earmark-code" style="margin-right: 0.75rem;"></i> {{ translate('admin.html_review') }}
         </a>
         <a href="#cert-review" class="sidebar-item" data-tab="cert-review" onclick="switchTab('cert-review'); return false;">
-            <i class="bi bi-shield-check" style="margin-right: 0.75rem;"></i> 认证审核
+            <i class="bi bi-shield-check" style="margin-right: 0.75rem;"></i> {{ translate('admin.cert_review') }}
         </a>
         <a href="#data" class="sidebar-item" data-tab="data" onclick="switchTab('data'); return false;">
-            <i class="bi bi-graph-up" style="margin-right: 0.75rem;"></i> 数据报表
+            <i class="bi bi-graph-up" style="margin-right: 0.75rem;"></i> {{ translate('admin.data_report') }}
         </a>
     </div>
     
     <!-- 主内容区 -->
     <div class="admin-content">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0" style="color: #111827; font-weight: 700;">管理员面板</h2>
+            <h2 class="mb-0" style="color: #111827; font-weight: 700;">{{ translate('admin.title') }}</h2>
         </div>
         
         <!-- 数据统计卡片 -->
         <div class="row mb-4 g-3">
             <div class="col-md-3 col-sm-6">
                 <div class="stat-card" style="border-left: 4px solid #2563eb;">
-                    <div class="stat-label">总用户数</div>
+                    <div class="stat-label">{{ translate('admin.total_users') }}</div>
                     <div class="stat-number">{{ stats.total_users }}</div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
                 <div class="stat-card" style="border-left: 4px solid #10b981;">
-                    <div class="stat-label">管理员数</div>
+                    <div class="stat-label">{{ translate('admin.admin_users') }}</div>
                     <div class="stat-number">{{ stats.admin_users }}</div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
                 <div class="stat-card" style="border-left: 4px solid #3b82f6;">
-                    <div class="stat-label">总任务数</div>
+                    <div class="stat-label">{{ translate('admin.total_tasks') }}</div>
                     <div class="stat-number">{{ stats.total_tasks }}</div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
                 <div class="stat-card" style="border-left: 4px solid #f59e0b;">
-                    <div class="stat-label">总提交数</div>
+                    <div class="stat-label">{{ translate('admin.total_submissions') }}</div>
                     <div class="stat-number">{{ stats.total_submissions }}</div>
                 </div>
             </div>
@@ -96,7 +96,7 @@
             <div class="tab-pane fade show active" id="users" role="tabpanel">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0" style="color: white;">用户列表与权限分配</h5>
+                        <h5 class="mb-0" style="color: white;">{{ translate('admin.user_list_title') }}</h5>
                         <div>
                             <a href="{{ url_for('quickform.admin_users_statistics') }}" class="btn btn-sm me-2" style="font-weight: 500; background-color: #3b82f6; color: white; border: none;">
                                 <i class="bi bi-graph-up"></i> 数据统计

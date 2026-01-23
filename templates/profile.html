@@ -150,17 +150,17 @@
                                 </div>
                             </div>
                             
-                            <button type="submit" class="btn btn-success mt-4">保存配置</button>
+                            <button type="submit" class="btn btn-success mt-4">{{ translate('profile.save_config') }}</button>
 
                             <div class="border rounded p-3 mt-4 bg-light">
-                                <h6 class="mb-2">API 连通性测试</h6>
-                                <p class="small text-muted mb-3">保存配置后，可通过下方快速测试按钮确认模型接口是否可正常响应。</p>
+                                <h6 class="mb-2">{{ translate('profile.api_connectivity_test') }}</h6>
+                                <p class="small text-muted mb-3">{{ translate('profile.api_test_desc') }}</p>
                                 <label for="test-ai-prompt" class="form-label small text-muted">测试提示词（可选）</label>
                                 <textarea id="test-ai-prompt" class="form-control" rows="2" placeholder="例如：请回复“OK”，用于连通性测试。"></textarea>
                                 <div class="d-flex align-items-center gap-2 mt-3">
-                                    <button type="button" class="btn btn-outline-primary" id="test-ai-btn">测试接口</button>
+                                    <button type="button" class="btn btn-outline-primary" id="test-ai-btn">{{ translate('profile.test_interface') }}</button>
                                     <div class="spinner-border spinner-border-sm text-primary d-none" id="test-ai-spinner" role="status">
-                                        <span class="visually-hidden">测试中…</span>
+                                        <span class="visually-hidden">{{ translate('profile.testing') }}</span>
                                     </div>
                                 </div>
                                 <div id="test-ai-result" class="mt-2 small"></div>
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 var preview = data.response_preview || '';
                 resultEl.classList.remove('text-danger');
                 resultEl.classList.add('text-success');
-                resultEl.innerHTML = '模型：<strong>' + model + '</strong>，响应：' + (preview ? preview : '{{ translate("js.test_success") }}');
+                resultEl.innerHTML = '{{ translate("profile.model_response") }}'.replace('{model}', model).replace('{response}', (preview ? preview : '{{ translate("js.test_success") }}'));
             })
             .catch(function(err){
                 resultEl.classList.remove('text-success');

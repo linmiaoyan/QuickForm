@@ -433,7 +433,7 @@
                         <a class="nav-link" href="{{ url_for('quickform.dashboard') }}"><i class="bi bi-speedometer2"></i> {{ translate('nav.dashboard') }}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('quickform.organization') }}"><i class="bi bi-people-fill"></i> 组织</a>
+                        <a class="nav-link" href="{{ url_for('quickform.organization') }}"><i class="bi bi-people-fill"></i> {{ translate('organization.title') }}</a>
                     </li>
                     {% if current_user.is_admin() %}
                     <li class="nav-item">

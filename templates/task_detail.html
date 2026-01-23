@@ -282,6 +282,38 @@ function sendTestData() {
                 {% endif %}
             </div>
             <div class="card-body">
+                <!-- 测试数据提交区域 -->
+                <div class="mb-4 p-3 border rounded" style="background-color: #f0f7ff; border-color: #4a90e2;">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-code-square me-2" style="font-size: 1.5rem; color: #4a90e2;"></i>
+                        <h5 class="mb-0" style="font-weight: 600; color: #2563eb;">
+                            {{ translate('task_detail.debug_test') }}
+                        </h5>
+                    </div>
+                    <p class="text-muted mb-3">{{ translate('task_detail.debug_test_desc') }}</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ translate('task_detail.data_content') }}</label>
+                        <textarea 
+                            id="test-data-input" 
+                            class="form-control" 
+                            rows="6" 
+                            placeholder="{{ translate('task_detail.debug_input_placeholder') }}"
+                            style="font-family: 'Courier New', monospace; font-size: 13px; border: 2px solid #e0e7ff;"></textarea>
+                        <small class="text-muted d-block mt-1">{{ translate('task_detail.debug_test_desc') }}</small>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button 
+                            type="button" 
+                            class="btn btn-primary" 
+                            onclick="submitTestData()"
+                            id="test-submit-btn"
+                            style="font-weight: 500;">
+                            <i class="bi bi-send-fill"></i> {{ translate('task_detail.debug_submit') }}
+                        </button>
+                        <span id="test-submit-status" class="small ms-2"></span>
+                    </div>
+                </div>
+                
                 {% if submissions %}
                 <div class="overflow-auto">
                     <table class="table table-striped">
@@ -330,7 +362,7 @@ function sendTestData() {
                     <nav aria-label="{{ translate('task_detail.pagination') }}">
                         <ul class="pagination justify-content-center">
                             <li class="page-item {% if pagination.page <= 1 %}disabled{% endif %}">
-                                <a class="page-link" href="{{ url_for('quickform.task_detail', task_id=task.id, page=pagination.page - 1, per_page=pagination.per_page) }}" aria-label="上一页">
+                                <a class="page-link" href="{{ url_for('quickform.task_detail', task_id=task.id, page=pagination.page - 1, per_page=pagination.per_page) }}" aria-label="{{ translate('task_detail.prev_page_aria') }}">
                                     <span aria-hidden="true">&laquo;</span>
                                 </a>
                             </li>
@@ -397,7 +429,7 @@ function sendTestData() {
                     qrcodeDiv.setAttribute('data-generated', 'true');
                 } catch (error) {
                     console.error('生成二维码失败:', error);
-                    alert('生成二维码失败，请稍后重试');
+                    alert('{{ translate("task_detail.qrcode_error") }}');
                     container.style.display = 'none';
                 }
             }
@@ -464,7 +496,7 @@ function sendTestData() {
         if (badge) badge.textContent = activeCount;
         
         if (activeCount === 0) {
-            container.innerHTML = '<p class="text-muted mb-0">暂无活跃的封禁记录</p>';
+            container.innerHTML = '<p class="text-muted mb-0">{{ translate("task_detail.no_active_blocks") }}</p>';
             return;
         }
         
@@ -477,10 +509,10 @@ function sendTestData() {
             
             html += '<div class="mb-2 p-2 border rounded">';
             html += '<strong>IP: ' + ip + '</strong><br>';
-            html += '<small class="text-muted">封禁时间: ' + latest.timestamp + '</small><br>';
-            html += '<small class="text-danger">剩余时间: 约 ' + remainingMinutes + ' 分钟</small>';
+            html += '<small class="text-muted">{{ translate("task_detail.block_time") }}' + latest.timestamp + '</small><br>';
+            html += '<small class="text-danger">{{ translate("task_detail.remaining_time") }}' + remainingMinutes + '{{ translate("task_detail.remaining_minutes") }}</small>';
             if (records.length > 1) {
-                html += '<br><small class="text-muted">（该IP共有 ' + records.length + ' 条封禁记录）</small>';
+                html += '<br><small class="text-muted">{{ translate("task_detail.block_records_count") }}' + records.length + '{{ translate("task_detail.block_records_suffix") }}</small>';
             }
             html += '</div>';
         });
@@ -515,10 +547,10 @@ function sendTestData() {
                         
                         html += '<div class="mb-2 p-2 border rounded">';
                         html += '<strong>IP: ' + ip + '</strong><br>';
-                        html += '<small class="text-muted">封禁时间: ' + latest.timestamp + '</small><br>';
-                        html += '<small class="text-danger">剩余时间: 约 ' + remainingMinutes + ' 分钟</small>';
+                        html += '<small class="text-muted">{{ translate("task_detail.block_time") }}' + latest.timestamp + '</small><br>';
+                        html += '<small class="text-danger">{{ translate("task_detail.remaining_time") }}' + remainingMinutes + '{{ translate("task_detail.remaining_minutes") }}</small>';
                         if (records.length > 1) {
-                            html += '<br><small class="text-muted">（该IP共有 ' + records.length + ' 条封禁记录）</small>';
+                            html += '<br><small class="text-muted">{{ translate("task_detail.block_records_count") }}' + records.length + '{{ translate("task_detail.block_records_suffix") }}</small>';
                         }
                         html += '</div>';
                     });
@@ -596,18 +628,18 @@ function sendTestData() {
             <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); margin:0; display:flex; align-items:center; justify-content:center;">
                 <div class="modal-content" style="width:90%; height:90%; max-height:500px; max-width:900px; display:flex; flex-direction:column; background:white; margin:0; padding:0;">
                     <div class="modal-header" style="padding:10px 15px; border-bottom:1px solid #dee2e6; margin:0;">
-                        <h5 id="singleDataModalTitle" class="modal-title" style="margin:0; font-size:16px;">提交数据详情</h5>
-                        <button type="button" class="btn" style="border:none; background:transparent; font-size:20px;" onclick="window.hideDataModal()" aria-label="Close">✖</button>
+                        <h5 id="singleDataModalTitle" class="modal-title" style="margin:0; font-size:16px;">{{ translate('task_detail.modal_title') }}</h5>
+                        <button type="button" class="btn" style="border:none; background:transparent; font-size:20px;" onclick="window.hideDataModal()" aria-label="{{ translate('common.close') }}">✖</button>
                     </div>
                     <div class="modal-body" style="padding:15px; flex-grow:1; overflow-y:auto; margin:0;">
-                        <p style="margin:0 0 10px 0; font-size:14px;"><strong>提交时间：</strong><span id="singleDataModalTime"></span></p>
+                        <p style="margin:0 0 10px 0; font-size:14px;"><strong>{{ translate('task_detail.modal_submission_time') }}</strong><span id="singleDataModalTime"></span></p>
                         <div style="margin:0;">
-                            <h6 style="margin:0 0 8px 0; font-size:14px;">数据内容：</h6>
+                            <h6 style="margin:0 0 8px 0; font-size:14px;">{{ translate('task_detail.modal_data_content') }}</h6>
                             <pre id="singleDataModalContent" class="bg-light p-3 rounded overflow-auto" style="font-size:16px; line-height:1.6; white-space:pre-wrap; word-wrap:break-word; margin:0; min-height:300px;"></pre>
                         </div>
                     </div>
                     <div class="modal-footer" style="padding:10px 15px; border-top:1px solid #dee2e6; justify-content:flex-end; margin:0;">
-                        <button type="button" class="btn btn-secondary" onclick="window.hideDataModal()">关闭</button>
+                        <button type="button" class="btn btn-secondary" onclick="window.hideDataModal()">{{ translate('task_detail.modal_close') }}</button>
                     </div>
                 </div>
             </div>`;
@@ -623,7 +655,7 @@ function sendTestData() {
         const t = btn.getAttribute('data-sub-time') || '';
         let d = btn.getAttribute('data-sub-data') || '';
         try { d = JSON.stringify(JSON.parse(d), null, 2); } catch(e) {}
-        document.getElementById('singleDataModalTitle').textContent = '提交数据详情 #' + id;
+        document.getElementById('singleDataModalTitle').textContent = '{{ translate("task_detail.modal_title_prefix") }}' + id;
         document.getElementById('singleDataModalTime').textContent = t;
         document.getElementById('singleDataModalContent').textContent = d;
         wrap.style.display = 'block';
@@ -635,7 +667,7 @@ function sendTestData() {
 
     // 删除单条数据
     window.deleteSingleData = function deleteSingleData(subId) {
-        if (!confirm('确定要删除这条数据吗？此操作不可恢复。')) {
+        if (!confirm('{{ translate("task_detail.confirm_delete_single") }}')) {
             return;
         }
         
@@ -659,21 +691,21 @@ function sendTestData() {
         })
         .then(data => {
             if (data.success) {
-                alert('删除成功');
+                alert('{{ translate("task_detail.delete_success") }}');
                 location.reload();
             } else {
-                alert('删除失败：' + (data.message || '未知错误'));
+                alert('{{ translate("task_detail.delete_failed") }}' + (data.message || '{{ translate("task_detail.unknown_error") }}'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('删除失败：' + error.message);
+            alert('{{ translate("task_detail.delete_failed") }}' + error.message);
         });
     };
     
     // 删除全部数据
     window.deleteAllData = function deleteAllData() {
-        if (!confirm('确定要删除所有数据吗？此操作不可恢复。')) {
+        if (!confirm('{{ translate("task_detail.confirm_delete_all") }}')) {
             return;
         }
         
@@ -697,21 +729,21 @@ function sendTestData() {
         })
         .then(data => {
             if (data.success) {
-                alert('删除成功');
+                alert('{{ translate("task_detail.delete_success") }}');
                 location.reload();
             } else {
-                alert('删除失败：' + (data.message || '未知错误'));
+                alert('{{ translate("task_detail.delete_failed") }}' + (data.message || '{{ translate("task_detail.unknown_error") }}'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('删除失败：' + error.message);
+            alert('{{ translate("task_detail.delete_failed") }}' + error.message);
         });
     };
     
     // 移除组织分配
     window.removeFromOrg = function removeFromOrg(taskId) {
-        if (!confirm('确定要将任务从组织中移除吗？移除后将变为私有任务。')) {
+        if (!confirm('{{ translate("task_detail.confirm_remove_org") }}')) {
             return;
         }
         
@@ -724,21 +756,21 @@ function sendTestData() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('已移除组织分配');
+                alert('{{ translate("task_detail.removed_from_org") }}');
                 location.reload();
             } else {
-                alert('操作失败：' + (data.message || '未知错误'));
+                alert('{{ translate("task_detail.operation_failed") }}' + (data.message || '{{ translate("task_detail.unknown_error") }}'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('操作失败：网络错误');
+            alert('{{ translate("task_detail.operation_failed") }}{{ translate("task_detail.network_error") }}');
         });
     };
     
     // 移除个人共享
     window.removeShare = function removeShare(shareId) {
-        if (!confirm('确定要取消共享吗？')) {
+        if (!confirm('{{ translate("task_detail.confirm_remove_share") }}')) {
             return;
         }
         
@@ -751,15 +783,15 @@ function sendTestData() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('已取消共享');
+                alert('{{ translate("task_detail.share_removed") }}');
                 location.reload();
             } else {
-                alert('操作失败：' + (data.message || '未知错误'));
+                alert('{{ translate("task_detail.operation_failed") }}' + (data.message || '{{ translate("task_detail.unknown_error") }}'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('操作失败：网络错误');
+            alert('{{ translate("task_detail.operation_failed") }}{{ translate("task_detail.network_error") }}');
         });
     };
     
@@ -776,6 +808,82 @@ function sendTestData() {
             shareManagementIcon.style.transform = 'rotate(0deg)';
         });
     }
+    
+    // 测试数据提交功能
+    window.submitTestData = function submitTestData() {
+        const input = document.getElementById('test-data-input');
+        const btn = document.getElementById('test-submit-btn');
+        const status = document.getElementById('test-submit-status');
+        
+        if (!input || !btn || !status) return;
+        
+        const dataText = input.value.trim();
+        if (!dataText) {
+            status.textContent = '{{ translate("task_detail.debug_invalid_json") }}';
+            status.style.color = '#dc3545';
+            return;
+        }
+        
+        // 验证JSON格式
+        let data;
+        try {
+            data = JSON.parse(dataText);
+        } catch (e) {
+            status.textContent = '{{ translate("task_detail.debug_invalid_json") }}: ' + e.message;
+            status.style.color = '#dc3545';
+            return;
+        }
+        
+        // 禁用按钮，显示提交中
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> {{ translate("task_detail.debug_submitting") }}';
+        status.textContent = '';
+        
+        // 获取API URL
+        const apiUrl = '{{ request.host_url|replace("https://", "http://") }}api/{{ task.task_id }}';
+        
+        // 提交数据
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(async response => {
+            const text = await response.text();
+            let result = {};
+            try {
+                result = text ? JSON.parse(text) : {};
+            } catch (e) {
+                result = { raw: text };
+            }
+            
+            if (!response.ok) {
+                throw new Error(result.error || result.message || `HTTP ${response.status}`);
+            }
+            return result;
+        })
+        .then(result => {
+            status.textContent = '{{ translate("task_detail.debug_success") }}';
+            status.style.color = '#28a745';
+            input.value = '';
+            
+            // 延迟刷新页面以显示新数据
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            status.textContent = '{{ translate("task_detail.debug_failed") }}' + error.message;
+            status.style.color = '#dc3545';
+            console.error('提交失败:', error);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send"></i> {{ translate("task_detail.debug_submit") }}';
+        });
+    };
 </script>
 {% endblock %}
 {% endblock %}
