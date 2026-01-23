@@ -60,7 +60,7 @@ from core.blueprint import quickform_bp, init_quickform, SessionLocal
 init_quickform(app, login_manager, database_type=DATABASE_TYPE)
 
 # 注册Blueprint
-app.register_blueprint(quickform_bp, url_prefix='/quickform')
+app.register_blueprint(quickform_bp)
 
 # User loader
 @login_manager.user_loader
