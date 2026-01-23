@@ -1077,7 +1077,11 @@ def submit_form(task_id):
                         'raw_data': sub.data
                     })
             
+            # 构建/all路由的完整URL
+            base_url = request.url.rstrip('/')
+            all_url = f"{base_url}/all"
             response = jsonify({
+                'note': f'当前路由会返回最新三条数据，获取全部数据请访问：{all_url}',
                 'task_id': task.task_id,
                 'task_title': task.title,
                 'total_submissions': total_count,
@@ -1228,10 +1232,12 @@ def submit_form_all(task_id):
                     'raw_data': sub.data
                 })
         
+        total_count = len(data_list)
         response = jsonify({
+            'note': f'当前共有 {total_count} 条数据',
             'task_id': task.task_id,
             'task_title': task.title,
-            'total_submissions': len(data_list),
+            'total_submissions': total_count,
             'submissions': data_list
         })
         response.headers['Access-Control-Allow-Origin'] = '*'
