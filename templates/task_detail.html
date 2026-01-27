@@ -207,7 +207,7 @@
                 <div class="mb-3">
                     <label class="form-label"><strong>{{ translate('task_detail.data_url_label') }}</strong></label>
                     <div class="input-group">
-                        <input type="text" class="form-control" readonly value="{{ request.host_url|replace('https://', 'http://') }}api/{{ task.task_id }}" id="post-url">
+                        <input type="text" class="form-control" readonly value="{{ request.host_url }}api/{{ task.task_id }}" id="post-url">
                         <button class="btn btn-outline-secondary" onclick="copyToClipboard('post-url')" style="font-weight: 500;">
                             <i class="bi bi-clipboard"></i>{{ translate('task_detail.copy_url') }}
                         </button>
@@ -218,7 +218,7 @@
                 <div class="mb-3">
                     <label class="form-label"><strong>{{ translate('task_detail.simple_prompt_label') }}</strong></label>
                     <div class="input-group">
-                        <textarea class="form-control" id="simple-prompt-text" rows="3" readonly style="font-family: 'Courier New', monospace; font-size: 13px;">{{ translate('task_detail.simple_prompt_text') }} '{{ request.host_url|replace('https://', 'http://') }}api/{{ task.task_id }}' {{ translate('task_detail.simple_prompt_send') }}</textarea>
+                        <textarea class="form-control" id="simple-prompt-text" rows="3" readonly style="font-family: 'Courier New', monospace; font-size: 13px;">{{ translate('task_detail.simple_prompt_text') }} '{{ request.host_url }}api/{{ task.task_id }}' {{ translate('task_detail.simple_prompt_send') }}</textarea>
                         <button class="btn btn-outline-primary" onclick="copyToClipboardText('simple-prompt-text')" style="font-weight: 500;">
                             <i class="bi bi-clipboard"></i>{{ translate('task_detail.copy') }}
                         </button>
@@ -241,7 +241,7 @@
 
 <script>
 function sendTestData() {
-    const url = '{{ request.host_url|replace('https://', 'http://') }}api/{{ task.task_id }}';
+    const url = '{{ request.host_url }}api/{{ task.task_id }}';
     const data = {"{{ translate('dashboard.code_example_field') }}1": "{{ translate('dashboard.code_example_value') }}1", "{{ translate('dashboard.code_example_field') }}2": "{{ translate('dashboard.code_example_value') }}2"};
     document.getElementById('send-result').textContent = "{{ translate('dashboard.code_example_submitting') }}";
     fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
@@ -840,7 +840,7 @@ function sendTestData() {
         status.textContent = '';
         
         // 获取API URL
-        const apiUrl = '{{ request.host_url|replace("https://", "http://") }}api/{{ task.task_id }}';
+        const apiUrl = '{{ request.host_url }}api/{{ task.task_id }}';
         
         // 提交数据
         fetch(apiUrl, {
