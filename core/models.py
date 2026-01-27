@@ -83,6 +83,7 @@ class Task(Base):
     custom_prompt = Column(Text)  # 用户自定义的分析提示词（已废弃，保留用于兼容）
     user_prompt_template = Column(Text)  # 用户自定义的提示词模板（不包含数据部分）
     is_featured = Column(Boolean, default=False)  # 是否加精
+    color_tag = Column(String(20), nullable=True)  # 任务卡片颜色标签（如 'blue', 'green'）
     # 协作功能字段
     organization_id = Column(Integer, ForeignKey('organization.id'), nullable=True)  # 所属组织
     sharing_type = Column(String(20), default='private')  # private私有/shared共享/organization组织
@@ -322,6 +323,13 @@ def migrate_database(engine):
                     logger.info("成功为task添加is_featured字段")
                 except Exception as e:
                     logger.warning(f"添加is_featured失败（可能已存在）: {str(e)}")
+
+            if task_cols and 'color_tag' not in task_cols:
+                try:
+                    conn.execute(text("ALTER TABLE task ADD COLUMN color_tag VARCHAR(20)"))
+                    logger.info("成功为task添加color_tag字段（任务卡片颜色标签）")
+                except Exception as e:
+                    logger.warning(f"添加color_tag失败（可能已存在）: {str(e)}")
 
             # 创建认证申请表
             if 'certification_request' not in inspector.get_table_names():

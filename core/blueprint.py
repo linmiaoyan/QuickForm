@@ -28,6 +28,10 @@ import logging
 from functools import wraps
 from collections import deque
 from typing import Deque
+import time
+import smtplib
+from email.mime.text import MIMEText
+from email.utils import formataddr
 
 # 导入分离的模块
 from .models import Base, User, Task, Submission, AIConfig, migrate_database, CertificationRequest, Post, Organization, OrganizationMember, TaskShare
@@ -51,6 +55,87 @@ logger = logging.getLogger(__name__)
 
 # 加载环境变量
 load_dotenv()
+
+# 简单的邮箱验证码存储（开发环境用，生产建议换成 Redis）
+EMAIL_CODE_STORE = {}
+
+
+def set_email_code(email: str, code: str, ttl_seconds: int = 600):
+    """保存邮箱验证码"""
+    EMAIL_CODE_STORE[email] = {
+        'code': code,
+        'expires_at': time.time() + ttl_seconds
+    }
+
+
+def verify_email_code(email: str, code: str) -> bool:
+    """校验邮箱验证码"""
+    data = EMAIL_CODE_STORE.get(email)
+    if not data:
+        return False
+    if time.time() > data['expires_at']:
+        EMAIL_CODE_STORE.pop(email, None)
+        return False
+    if data['code'] != code:
+        return False
+    # 一次性验证码，用完即删
+    EMAIL_CODE_STORE.pop(email, None)
+    return True
+
+
+def send_email_code(to_email: str, code: str):
+    """发送邮箱验证码"""
+    try:
+        conf = current_app.config
+        sender = conf.get('MAIL_USERNAME')
+        if not sender or not conf.get('MAIL_PASSWORD'):
+            logger.error("邮件配置不完整，无法发送验证码")
+            raise RuntimeError("邮件配置不完整")
+
+        sender_name = "QuickForm 验证码"
+        # 统一使用中性的标题，适用于注册、重置密码等场景
+        subject = "QuickForm 验证码"
+        body = (
+            f"您的验证码是：{code}，有效期 10 分钟。\n\n"
+            f"如果不是您本人在 QuickForm 中发起的操作，请忽略此邮件。"
+        )
+
+        msg = MIMEText(body, 'plain', 'utf-8')
+        msg['From'] = formataddr((sender_name, sender))
+        msg['To'] = to_email
+        msg['Subject'] = subject
+
+        server = None
+        try:
+            host = conf.get('MAIL_SERVER')
+            port = conf.get('MAIL_PORT')
+
+            # 统一策略：
+            # - 465 端口：SMTP_SSL 直连（QQ/163 常用）
+            # - 587/25 等端口：先 EHLO，再 STARTTLS
+            if int(port) == 465:
+                server = smtplib.SMTP_SSL(host, port)
+            else:
+                server = smtplib.SMTP(conf['MAIL_SERVER'], conf['MAIL_PORT'])
+                server.ehlo()
+                if conf.get('MAIL_USE_TLS', True):
+                    server.starttls()
+                    server.ehlo()
+
+            server.login(conf['MAIL_USERNAME'], conf['MAIL_PASSWORD'])
+            server.sendmail(sender, [to_email], msg.as_string())
+        finally:
+            if server is not None:
+                try:
+                    server.quit()
+                except Exception:
+                    pass
+
+        logger.info(f"验证码邮件已发送至: {to_email}")
+    except Exception as e:
+        logger.exception(f"发送邮箱验证码失败: {e}")
+        raise
+
 
 # 获取QuickForm目录路径
 QUICKFORM_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -352,47 +437,62 @@ def delete_post(post_id):
 @quickform_bp.route('/register', methods=['GET', 'POST'])
 def register():
     """注册"""
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        email = request.form.get('email', '').strip()
-        password = request.form.get('password', '').strip()
-        school = request.form.get('school', '').strip()
-        phone = request.form.get('phone', '').strip()
-        
-        if not username or not email or not password or not school or not phone:
-            flash('请填写所有必填字段', 'danger')
-            return redirect(url_for('quickform.register'))
-        
-        import re
-        if not re.match(r'^1[3-9]\d{9}$', phone):
-            flash('请输入正确的11位手机号码', 'danger')
-            return redirect(url_for('quickform.register'))
-        
-        db = SessionLocal()
-        try:
-            existing_user = db.query(User).filter(
-                (User.username == username) | (User.email == email)
-            ).first()
+    try:
+        if request.method == 'POST':
+            username = request.form.get('username', '').strip()
+            email = request.form.get('email', '').strip()
+            password = request.form.get('password', '').strip()
+            school = request.form.get('school', '').strip()
+            phone = request.form.get('phone', '').strip()
+            email_code = request.form.get('email_code', '').strip()
             
-            if existing_user:
-                flash('用户名或邮箱已存在', 'danger')
+            if not username or not email or not password or not school:
+                flash('请填写所有必填字段', 'danger')
+                return redirect(url_for('quickform.register'))
+
+            # 校验邮箱验证码
+            if not email_code or not verify_email_code(email, email_code):
+                flash('邮箱验证码错误或已过期，请重新获取', 'danger')
                 return redirect(url_for('quickform.register'))
             
-            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-            user = User(username=username, email=email, password=hashed_password, 
-                       school=school, phone=phone)
-            
-            ai_config = AIConfig(user=user, selected_model='chat_server')
-            
-            db.add(user)
-            db.commit()
-            
-            flash('注册成功，请登录', 'success')
-            return redirect(url_for('quickform.login'))
-        finally:
-            db.close()
-    
-    return render_template('register.html')
+            db = SessionLocal()
+            try:
+                existing_user = db.query(User).filter(
+                    (User.username == username) | (User.email == email) | (User.phone == phone)
+                ).first()
+                
+                if existing_user:
+                    if existing_user.username == username:
+                        flash('用户名已存在', 'danger')
+                    elif existing_user.email == email:
+                        flash('邮箱已存在', 'danger')
+                    else:
+                        flash('手机号已被注册', 'danger')
+                    return redirect(url_for('quickform.register'))
+                
+                hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+                user = User(username=username, email=email, password=hashed_password, 
+                           school=school, phone=phone)
+                
+                ai_config = AIConfig(user=user, selected_model='chat_server')
+                
+                db.add(user)
+                db.commit()
+                
+                flash('注册成功，请登录', 'success')
+                return redirect(url_for('quickform.login'))
+            finally:
+                db.close()
+        else:
+            # GET请求，显示注册页面
+            return render_template('register.html')
+    except Exception as e:
+        logger.exception("注册页面异常")
+        flash(f'页面加载错误: {str(e)}', 'danger')
+        try:
+            return render_template('register.html')
+        except:
+            return f"注册页面加载失败: {str(e)}", 500
 
 @quickform_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -433,6 +533,144 @@ def login():
             db.close()
     
     return render_template('login.html')
+
+
+@quickform_bp.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    """
+    通过手机号确认身份，再向绑定邮箱发送验证码以重置密码。
+    第一步：输入手机号，查找账户并展示用户名；
+    第二步：发送验证码并重置密码（仅使用服务器端查到的邮箱）。
+    """
+    from flask import session
+
+    if request.method == 'POST':
+        # 区分步骤：如果有phone字段，说明是第一步；否则为第二步重置密码
+        phone = (request.form.get('phone') or '').strip()
+        if phone:
+            # 第一步：根据手机号查找用户
+            db = SessionLocal()
+            try:
+                users = db.query(User).filter(User.phone == phone).all()
+                if not users:
+                    flash('未找到使用该手机号注册的账户', 'warning')
+                    return redirect(url_for('quickform.forgot_password'))
+
+                if len(users) > 1:
+                    # 同一手机号多个账户时提示所有用户名，避免误操作
+                    usernames = ', '.join(u.username for u in users)
+                    flash(f'该手机号对应多个用户名：{usernames}，请联系管理员协助重置密码。', 'warning')
+                    return redirect(url_for('quickform.forgot_password'))
+
+                user = users[0]
+                # 在会话中记录当前正在进行密码重置的用户ID
+                session['pw_reset_user_id'] = user.id
+                # 跳转到第二步页面，展示用户名并允许发送验证码与重置密码
+                return render_template('forgot_password.html', mode='verify', user=user)
+            finally:
+                db.close()
+        else:
+            # 第二步：根据会话中的用户信息校验验证码并重置密码
+            email_code = (request.form.get('email_code') or '').strip()
+            new_password = (request.form.get('new_password') or '').strip()
+            confirm_password = (request.form.get('confirm_password') or '').strip()
+
+            if not email_code or not new_password or not confirm_password:
+                flash('请填写所有必填项', 'danger')
+                return redirect(url_for('quickform.forgot_password'))
+
+            if new_password != confirm_password:
+                flash('两次输入的密码不一致', 'danger')
+                return redirect(url_for('quickform.forgot_password'))
+
+            if len(new_password) < 6:
+                flash('新密码长度至少为6个字符', 'danger')
+                return redirect(url_for('quickform.forgot_password'))
+
+            user_id = session.get('pw_reset_user_id')
+            if not user_id:
+                flash('重置流程已过期，请重新验证手机号', 'warning')
+                return redirect(url_for('quickform.forgot_password'))
+
+            db = SessionLocal()
+            try:
+                user = db.query(User).filter(User.id == user_id).first()
+                if not user or not user.email:
+                    flash('账户信息异常，请联系管理员', 'danger')
+                    return redirect(url_for('quickform.forgot_password'))
+
+                # 校验邮箱验证码（只使用服务器端查到的邮箱）
+                if not verify_email_code(user.email, email_code):
+                    flash('邮箱验证码错误或已过期，请重新获取', 'danger')
+                    return redirect(url_for('quickform.forgot_password'))
+
+                hashed = bcrypt.generate_password_hash(new_password).decode('utf-8')
+                user.password = hashed
+                db.commit()
+                # 完成后清理会话标记
+                session.pop('pw_reset_user_id', None)
+                flash('密码重置成功，请使用新密码登录', 'success')
+                return redirect(url_for('quickform.login'))
+            finally:
+                db.close()
+
+    # GET 或表单校验失败后默认回到第一步手机号输入页面
+    return render_template('forgot_password.html', mode='start', user=None)
+
+
+@quickform_bp.route('/forgot_password/send_code', methods=['POST'])
+def forgot_password_send_code():
+    """
+    第二步中点击“发送验证码”时调用。
+    只根据会话中的用户ID查找邮箱，避免前端伪造邮箱。
+    """
+    from flask import session
+
+    user_id = session.get('pw_reset_user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': '重置流程已过期，请重新验证手机号'}), 400
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user or not user.email:
+            return jsonify({'success': False, 'message': '账户信息异常，请联系管理员'}), 400
+
+        code = f"{random.randint(0, 999999):06d}"
+        set_email_code(user.email, code, ttl_seconds=600)
+        send_email_code(user.email, code)
+        return jsonify({'success': True, 'message': '验证码已发送'})
+    except Exception as e:
+        logger.exception(f"发送重置密码验证码失败: {e}")
+        return jsonify({'success': False, 'message': '服务器异常，请稍后再试'}), 500
+    finally:
+        db.close()
+
+
+@quickform_bp.route('/forgot_username', methods=['GET', 'POST'])
+def forgot_username():
+    """通过手机号查询用户名"""
+    if request.method == 'POST':
+        phone = (request.form.get('phone') or '').strip()
+        if not phone:
+            flash('请填写手机号', 'danger')
+            return redirect(url_for('quickform.forgot_username'))
+
+        db = SessionLocal()
+        try:
+            users = db.query(User).filter(User.phone == phone).all()
+            if not users:
+                flash('未找到使用该手机号注册的账户', 'warning')
+            else:
+                # 如果多个账户共用手机号，一并提示
+                usernames = ', '.join(u.username for u in users)
+                flash(f'该手机号对应的用户名为：{usernames}', 'info')
+        finally:
+            db.close()
+
+        return redirect(url_for('quickform.forgot_username'))
+
+    return render_template('forgot_username.html')
 
 @quickform_bp.route('/logout')
 def logout():
@@ -490,6 +728,7 @@ def dashboard():
         )
     finally:
         db.close()
+
 
 @quickform_bp.route('/create_task', methods=['GET', 'POST'])
 @login_required
@@ -1022,6 +1261,39 @@ def delete_task(task_id):
 def ai_test_page():
     """AI模型测试页面"""
     return render_template('ai_test.html')
+
+@quickform_bp.route('/api/email/send_code', methods=['POST'])
+def api_send_email_code():
+    """发送邮箱验证码"""
+    try:
+        data = request.get_json() or {}
+        email = (data.get('email') or '').strip()
+
+        if not email:
+            return jsonify({'success': False, 'message': '请提供邮箱地址'}), 400
+
+        # 简单邮箱格式校验
+        import re
+        if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+            return jsonify({'success': False, 'message': '邮箱格式不正确'}), 400
+
+        # 生成6位验证码
+        import random
+        code = f"{random.randint(0, 999999):06d}"
+
+        # 保存验证码
+        set_email_code(email, code, ttl_seconds=600)
+
+        # 发送邮件
+        send_email_code(email, code)
+
+        return jsonify({'success': True, 'message': '验证码已发送到邮箱，有效期10分钟'})
+    except Exception as e:
+        logger.exception("发送邮箱验证码异常")
+        return jsonify({
+            'success': False,
+            'message': f'服务器错误: {str(e)}'
+        }), 500
 
 SUBMIT_RATE_LIMIT_WINDOW = 10  # seconds
 SUBMIT_RATE_LIMIT_THRESHOLD = 50
@@ -3012,10 +3284,10 @@ def init_quickform(app, login_manager_instance=None, database_type=None):
     """
     global bcrypt, login_manager, _database_type
     
-    # 如果指定了数据库类型，重新初始化数据库
+    # 如果指定了数据库类型，重新初始化数据库连接
     if database_type:
         _database_type = database_type.lower()
-        logger.info(f"重新初始化数据库，使用类型: {_database_type}")
+        logger.info(f"根据应用配置，切换数据库类型为: {_database_type}")
         _init_database(_database_type)
     
     # 初始化Flask-Bcrypt

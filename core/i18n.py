@@ -136,7 +136,7 @@ TRANSLATIONS = {
         'register.school_placeholder': '请输入学校名称',
         'register.phone': '手机号',
         'register.phone_placeholder': '请输入11位手机号',
-        'register.phone_hint': '请输入11位手机号码（以1开头，第二位为3-9）',
+        'register.phone_hint': '请输入11位手机号码',
         'register.password': '密码',
         'register.password_placeholder': '请输入密码',
         'register.privacy_note': '隐私说明：',

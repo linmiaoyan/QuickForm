@@ -21,6 +21,14 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key_here')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
+# 邮件发送配置（用于邮箱验证码）
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.163.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')  # 你的163邮箱，例如 xxx@163.com
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')  # 163邮箱的SMTP授权码（不要写死在代码里）
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
+
 # 国际化支持
 from core.i18n import translate, get_locale, get_locale_name
 @app.context_processor
@@ -50,10 +58,10 @@ if os.getenv('DATABASE_TYPE'):
     DATABASE_TYPE = os.getenv('DATABASE_TYPE', 'sqlite')
 elif MYSQL_HOST and MYSQL_USER and MYSQL_PASSWORD:
     DATABASE_TYPE = 'mysql'
-    logger.info("检测到MySQL配置，自动使用MySQL数据库")
+    logger.info("检测到 MySQL 配置，将使用 MySQL 数据库")
 else:
     DATABASE_TYPE = 'sqlite'
-    logger.info("未检测到MySQL配置，使用SQLite数据库")
+    logger.info("未检测到 MySQL 配置，将使用 SQLite 数据库")
 
 # 导入并注册QuickForm Blueprint
 from core.blueprint import quickform_bp, init_quickform, SessionLocal
