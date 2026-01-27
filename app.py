@@ -116,11 +116,15 @@ def request_entity_too_large(error):
 
 if __name__ == '__main__':
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    port = int(os.getenv('FLASK_PORT', '80'))
+    port = int(os.getenv('FLASK_PORT', '443'))
     
     logger.info(f"QuickForm 正在启动...")
     logger.info(f"数据库类型: {DATABASE_TYPE}")
     logger.info(f"调试模式: {debug_mode}")
     logger.info(f"端口: {port}")
     
-    app.run(host='0.0.0.0', port=port, debug=debug_mode)
+    app.run(host='0.0.0.0', port=port, debug=debug_mode,
+            ssl_context=(
+            r"certs\quickform.cn.pem",  # 证书文件
+            r"certs\quickform.cn.key",    # 私钥文件
+        ))
