@@ -20,6 +20,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key_here')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.config['PREFERRED_URL_SCHEME'] = 'https'  # 统一生成 https 链接
 
 # 邮件发送配置（用于邮箱验证码）
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.163.com')
