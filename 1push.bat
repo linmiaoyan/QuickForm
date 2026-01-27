@@ -27,8 +27,17 @@ if %errorlevel% neq 0 (
 echo [成功] 文件已添加到暂存区
 echo.
 
-echo [步骤2] 提交更改
+:echo [步骤2] 提交更改
 echo.
+
+REM 检查是否有需要提交的更改（包括已暂存的）
+git diff --cached --quiet
+if %errorlevel% equ 0 (
+    echo [提示] 当前没有新的更改需要提交，将直接尝试推送已有提交...
+    echo.
+    goto PUSH_STEP
+)
+
 set /p commit_msg="请输入提交描述: "
 
 if "!commit_msg!"=="" (
@@ -46,6 +55,7 @@ if %errorlevel% neq 0 (
 echo [成功] 代码已提交
 echo.
 
+:PUSH_STEP
 echo [步骤3] 推送到GitHub
 git push origin main
 if %errorlevel% equ 0 (
