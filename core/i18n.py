@@ -98,7 +98,7 @@ TRANSLATIONS = {
         'dashboard.no_description': '暂无描述',
         'dashboard.created_at': '创建时间',
         'dashboard.submission_count': '提交数量',
-        'dashboard.data_url': '数据接口地址（URL）',
+        'dashboard.data_url': '接口地址',
         'dashboard.view_post_prompt': '查看POST提示词',
         'dashboard.post_instruction': '生成应用后，通过POST指令提交数据到以下URL：',
         'dashboard.post_instruction_detail': '生成应用后，产生的数据用以下方法传到服务器：',

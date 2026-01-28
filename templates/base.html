@@ -312,10 +312,17 @@
             margin-top: 0.25rem;
         }
         
-        /* 标题样式 */
+        /* 标题样式（覆盖范围最广的 h1–h6 颜色定义） */
         h1, h2, h3, h4, h5, h6 {
             font-weight: 700;
             color: #111827;
+        }
+        
+        /* 蓝底/深色头部内的标题继承父级颜色，避免黑字 */
+        .card-header h1, .card-header h2, .card-header h3, .card-header h4, .card-header h5, .card-header h6,
+        .org-header h1, .org-header h2, .org-header h3, .org-header h4, .org-header h5, .org-header h6,
+        .statistics-header h1, .statistics-header h2, .statistics-header h3 {
+            color: inherit;
         }
         
         h1 {
