@@ -1,5 +1,7 @@
 """QuickForm 独立应用入口"""
 import os
+import ssl
+import time
 from flask import Flask, redirect, url_for
 from flask_login import LoginManager, current_user
 from flask_bcrypt import Bcrypt
@@ -115,21 +117,48 @@ def request_entity_too_large(error):
     flash('文件大小超过服务器限制（最大16MB）', 'danger')
     return redirect(url_for('quickform.dashboard'))
 
+def _make_ssl_context():
+    """构建自定义 SSL 上下文，便于统一调优，减轻部分 SSL 相关崩溃。"""
+    cert = r"certs\quickform.cn.pem"
+    key = r"certs\quickform.cn.key"
+    try:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(cert, key)
+        if hasattr(ssl, 'TLSVersion') and hasattr(ctx, 'minimum_version'):
+            ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+        return ctx
+    except Exception:
+        return (cert, key)
+
+
 if __name__ == '__main__':
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     port = int(os.getenv('FLASK_PORT', '443'))
+    restart_delay = int(os.getenv('QUICKFORM_RESTART_DELAY', '10'))
 
+    logger.info(f"QuickForm 正在启动...")
     logger.info(f"数据库类型: {DATABASE_TYPE}")
     logger.info(f"调试模式: {debug_mode}")
     logger.info(f"端口: {port}")
 
-    app.run(
-        host='0.0.0.0',
-        port=port,
-        debug=debug_mode,
-        use_reloader=False,  # 加这一行
-        ssl_context=(
-            r"certs\quickform.cn.pem",
-            r"certs\quickform.cn.key",
-        ),
-    )
+    ssl_context = _make_ssl_context()
+
+    while True:
+        try:
+            app.run(
+                host='0.0.0.0',
+                port=port,
+                debug=debug_mode,
+                use_reloader=False,
+                ssl_context=ssl_context,
+            )
+        except KeyboardInterrupt:
+            logger.info("收到 Ctrl+C，正常退出")
+            break
+        except Exception as e:
+            logger.exception("QuickForm 进程异常退出: %s，%d 秒后自动重启", e, restart_delay)
+            time.sleep(restart_delay)
+        else:
+            # app.run() 正常返回（少见）
+            logger.warning("QuickForm 已停止，%d 秒后自动重启", restart_delay)
+            time.sleep(restart_delay)
