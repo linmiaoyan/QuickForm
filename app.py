@@ -2,7 +2,8 @@
 import os
 import ssl
 import time
-from flask import Flask, redirect, url_for
+import threading
+from flask import Flask, redirect, url_for, jsonify
 from flask_login import LoginManager, current_user
 from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
@@ -89,6 +90,29 @@ def index():
         return redirect(url_for('quickform.dashboard'))
     return redirect(url_for('quickform.index'))
 
+
+@app.route('/thread_count')
+def thread_count():
+    """查询当前存活线程数（用于监控；生产环境可加权限或移除）。"""
+    count = threading.active_count()
+    names = [t.name for t in threading.enumerate()]
+    return jsonify(thread_count=count, thread_names=names)
+
+
+def _log_thread_count_loop():
+    """后台线程：每隔一小时输出当前线程数（调试用）。"""
+    interval = int(os.getenv("QUICKFORM_THREAD_LOG_INTERVAL", "3600"))  # 秒，默认 1 小时
+    while True:
+        time.sleep(interval)
+        n = threading.active_count()
+        logger.info("当前线程数: %d", n)
+
+
+# 调试：每小时输出线程数，可通过 QUICKFORM_THREAD_LOG=0 关闭
+if os.getenv("QUICKFORM_THREAD_LOG", "1") != "0":
+    _thread_logger = threading.Thread(target=_log_thread_count_loop, daemon=True)
+    _thread_logger.start()
+
 # 配置日志过滤器
 class SecurityScanFilter(logging.Filter):
     def filter(self, record):
@@ -118,7 +142,7 @@ def request_entity_too_large(error):
     return redirect(url_for('quickform.dashboard'))
 
 def _make_ssl_context():
-    """构建自定义 SSL 上下文，便于统一调优，减轻部分 SSL 相关崩溃。"""
+    """直接运行 app 时使用的 SSL 上下文。用 gunicorn/反向代理时不需要。"""
     cert = r"certs\quickform.cn.pem"
     key = r"certs\quickform.cn.key"
     try:
@@ -132,33 +156,13 @@ def _make_ssl_context():
 
 
 if __name__ == '__main__':
-    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     port = int(os.getenv('FLASK_PORT', '443'))
-    restart_delay = int(os.getenv('QUICKFORM_RESTART_DELAY', '10'))
-
-    logger.info(f"QuickForm 正在启动...")
-    logger.info(f"数据库类型: {DATABASE_TYPE}")
-    logger.info(f"调试模式: {debug_mode}")
-    logger.info(f"端口: {port}")
-
-    ssl_context = _make_ssl_context()
-
-    while True:
-        try:
-            app.run(
-                host='0.0.0.0',
-                port=port,
-                debug=debug_mode,
-                use_reloader=False,
-                ssl_context=ssl_context,
-            )
-        except KeyboardInterrupt:
-            logger.info("收到 Ctrl+C，正常退出")
-            break
-        except Exception as e:
-            logger.exception("QuickForm 进程异常退出: %s，%d 秒后自动重启", e, restart_delay)
-            time.sleep(restart_delay)
-        else:
-            # app.run() 正常返回（少见）
-            logger.warning("QuickForm 已停止，%d 秒后自动重启", restart_delay)
-            time.sleep(restart_delay)
+    logger.info("当前线程数: %d", threading.active_count())
+    app.run(
+        host='0.0.0.0',
+        port=port,
+        debug=os.getenv('FLASK_DEBUG', 'False').lower() == 'true',
+        use_reloader=False,
+        threaded=True,  # 多线程：单请求卡住不会拖死整站，无需额外配 Waitress
+        ssl_context=_make_ssl_context(),
+    )
