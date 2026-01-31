@@ -1,9 +1,7 @@
 """QuickForm 独立应用入口"""
 import os
 import ssl
-import time
-import threading
-from flask import Flask, redirect, url_for, jsonify
+from flask import Flask, redirect, url_for
 from flask_login import LoginManager, current_user
 from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
@@ -90,29 +88,6 @@ def index():
         return redirect(url_for('quickform.dashboard'))
     return redirect(url_for('quickform.index'))
 
-
-@app.route('/thread_count')
-def thread_count():
-    """查询当前存活线程数（用于监控；生产环境可加权限或移除）。"""
-    count = threading.active_count()
-    names = [t.name for t in threading.enumerate()]
-    return jsonify(thread_count=count, thread_names=names)
-
-
-def _log_thread_count_loop():
-    """后台线程：每隔一小时输出当前线程数（调试用）。"""
-    interval = int(os.getenv("QUICKFORM_THREAD_LOG_INTERVAL", "3600"))  # 秒，默认 1 小时
-    while True:
-        time.sleep(interval)
-        n = threading.active_count()
-        logger.info("当前线程数: %d", n)
-
-
-# 调试：每小时输出线程数，可通过 QUICKFORM_THREAD_LOG=0 关闭
-if os.getenv("QUICKFORM_THREAD_LOG", "1") != "0":
-    _thread_logger = threading.Thread(target=_log_thread_count_loop, daemon=True)
-    _thread_logger.start()
-
 # 配置日志过滤器
 class SecurityScanFilter(logging.Filter):
     def filter(self, record):
@@ -157,7 +132,6 @@ def _make_ssl_context():
 
 if __name__ == '__main__':
     port = int(os.getenv('FLASK_PORT', '443'))
-    logger.info("当前线程数: %d", threading.active_count())
     app.run(
         host='0.0.0.0',
         port=port,
