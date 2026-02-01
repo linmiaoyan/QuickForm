@@ -17,6 +17,21 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+REM 预检查：检测与 GitHub 的连接
+echo [预检查] 正在检测与 GitHub 的连接...
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'https://github.com' -UseBasicParsing -TimeoutSec 10; exit 0 } catch { exit 1 }" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [错误] 无法连接 GitHub，请检查：
+    echo   1. 网络是否正常
+    echo   2. 是否需要配置代理
+    echo   3. 防火墙是否允许访问 github.com
+    echo.
+    pause
+    exit /b 1
+)
+echo [成功] GitHub 连接正常
+echo.
+
 echo [步骤1] 添加所有文件
 git add .
 if %errorlevel% neq 0 (

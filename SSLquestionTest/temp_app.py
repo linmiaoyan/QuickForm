@@ -1,21 +1,25 @@
 """
-最小化测试应用 - 仅模拟主程序启动，不引用 QuickForm 业务逻辑。
-用于排查：若此应用同样在约 6 小时后无响应，则问题更可能在 Flask/Werkzeug/SSL 层；
-若此应用稳定，则问题更可能在 QuickForm 业务代码。
+最小化测试应用 - 仅 Flask + SSL，不引用任何 QuickForm 模块。
+（与项目根目录 temp_app.py 逻辑相同，便于在 SSLquestionTest 内统一管理）
 
-用法：在项目根目录执行 python temp_app.py
-注意：443 端口需先停止主程序；或设置 FLASK_PORT=8443 与主程序并存测试。
+若此应用长时间稳定、app_static 也稳定、app_network 异常，则问题在数据库/AI/邮件等模块。
 """
 import os
 import ssl
 import logging
-from flask import Flask
+import sys
+
+# 切换到 QuickForm 根目录（证书路径相对根目录）
+_quickform_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(_quickform_root)
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+from flask import Flask
 
 app = Flask(__name__)
 
@@ -26,9 +30,8 @@ def index():
 
 
 def _make_ssl_context():
-    """与主程序相同的 SSL 配置"""
-    cert = r"certs\quickform.cn.pem"
-    key = r"certs\quickform.cn.key"
+    cert = os.path.join(_quickform_root, 'certs', 'quickform.cn.pem')
+    key = os.path.join(_quickform_root, 'certs', 'quickform.cn.key')
     try:
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ctx.load_cert_chain(cert, key)
@@ -36,7 +39,7 @@ def _make_ssl_context():
             ctx.minimum_version = ssl.TLSVersion.TLSv1_2
         return ctx
     except Exception as e:
-        logger.warning("SSL 证书加载失败: %s，将使用 (cert, key) 元组", e)
+        logger.warning("SSL 证书加载失败: %s", e)
         return (cert, key)
 
 

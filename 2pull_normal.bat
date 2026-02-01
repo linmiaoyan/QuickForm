@@ -9,6 +9,21 @@ echo 服务器代码更新
 echo ============================================
 echo.
 
+REM 预检查：检测与 GitHub 的连接
+echo [预检查] 正在检测与 GitHub 的连接...
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'https://github.com' -UseBasicParsing -TimeoutSec 10; exit 0 } catch { exit 1 }" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [错误] 无法连接 GitHub，请检查：
+    echo   1. 网络是否正常
+    echo   2. 是否需要配置代理
+    echo   3. 防火墙是否允许访问 github.com
+    echo.
+    pause
+    exit /b 1
+)
+echo [成功] GitHub 连接正常
+echo.
+
 REM 检查是否在Git仓库中
 if not exist ".git" (
     echo [提示] 当前目录不是Git仓库，正在初始化...
