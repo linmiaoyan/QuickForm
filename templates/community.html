@@ -310,7 +310,7 @@
                         </div>
                         <div>
                             <span class="post-time">{{ post.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                            {% if current_user.is_admin() %}
+                            {% if current_user.is_authenticated and current_user.is_admin() %}
                             <form method="POST" action="{{ url_for('quickform.delete_post', post_id=post.id) }}" style="display: inline; margin-left: 1rem;">
                                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('确定要删除这条留言吗？')">删除</button>
                             </form>
@@ -333,7 +333,7 @@
                                 </div>
                                 <div>
                                     <span class="reply-time">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                                    {% if current_user.is_admin() %}
+                                    {% if current_user.is_authenticated and current_user.is_admin() %}
                                     <form method="POST" action="{{ url_for('quickform.delete_reply', reply_id=reply.id) }}" style="display: inline; margin-left: 0.5rem;">
                                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这条回复吗？')">删除</button>
                                     </form>

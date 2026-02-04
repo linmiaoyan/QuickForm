@@ -1,7 +1,9 @@
 """QuickForm 独立应用入口"""
 import os
 import ssl
-from flask import Flask, redirect, url_for
+import time
+import threading
+from flask import Flask, redirect, url_for, request
 from flask_login import LoginManager, current_user
 from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
@@ -16,6 +18,32 @@ logger = logging.getLogger(__name__)
 
 # 加载环境变量
 load_dotenv()
+
+# ---------- 404 限流（防扫描） ----------
+# 同一 IP 在时间窗口内 404 次数超过阈值则短时拒绝，减轻扫描压力
+RATE_LIMIT_WINDOW = 60          # 秒
+RATE_LIMIT_404_MAX = 30         # 窗口内 404 超过此次数则限流
+RATE_LIMIT_BAN_SECONDS = 120    # 触发限流后禁止该 IP 的时长（秒）
+_404_count = {}                 # ip -> (count, window_start)
+_404_lock = threading.Lock()
+_ban_until = {}                 # ip -> unix timestamp 解禁时间
+
+
+def _get_client_ip():
+    return request.headers.get('X-Forwarded-For', request.remote_addr or '') or 'unknown'
+
+
+def _clean_old_entries():
+    now = time.time()
+    with _404_lock:
+        for ip in list(_404_count.keys()):
+            _, start = _404_count[ip]
+            if now - start > RATE_LIMIT_WINDOW:
+                del _404_count[ip]
+        for ip in list(_ban_until.keys()):
+            if _ban_until[ip] < now:
+                del _ban_until[ip]
+
 
 # 创建Flask应用
 app = Flask(__name__)
@@ -88,6 +116,40 @@ def index():
         return redirect(url_for('quickform.dashboard'))
     return redirect(url_for('quickform.index'))
 
+# ---------- 404 限流：请求前检查是否被禁 ----------
+@app.before_request
+def before_request_rate_limit():
+    ip = _get_client_ip()
+    now = time.time()
+    with _404_lock:
+        _clean_old_entries()
+        if ip in _ban_until and _ban_until[ip] > now:
+            return 'Too Many Requests', 429
+
+
+# ---------- 404 限流：请求后统计 404 ----------
+@app.after_request
+def after_request_404_track(response):
+    if response.status_code != 404:
+        return response
+    ip = _get_client_ip()
+    now = time.time()
+    with _404_lock:
+        if ip not in _404_count:
+            _404_count[ip] = (0, now)
+        cnt, start = _404_count[ip]
+        if now - start > RATE_LIMIT_WINDOW:
+            _404_count[ip] = (1, now)
+            cnt = 1
+        else:
+            cnt += 1
+            _404_count[ip] = (cnt, start)
+        if cnt >= RATE_LIMIT_404_MAX:
+            _ban_until[ip] = now + RATE_LIMIT_BAN_SECONDS
+            logger.warning("404限流: IP %s 在 %ds 内 404 达 %d 次，已临时限制 %ds", ip, RATE_LIMIT_WINDOW, cnt, RATE_LIMIT_BAN_SECONDS)
+    return response
+
+
 # 配置日志过滤器
 class SecurityScanFilter(logging.Filter):
     def filter(self, record):
@@ -100,7 +162,7 @@ class SecurityScanFilter(logging.Filter):
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.addFilter(SecurityScanFilter())
 
-# 错误处理
+# ---------- 错误处理（保证服务通畅，不因单次异常挂掉） ----------
 @app.errorhandler(400)
 def bad_request(error):
     return 'Bad Request', 400
@@ -108,6 +170,25 @@ def bad_request(error):
 @app.errorhandler(404)
 def not_found(error):
     return 'Not Found', 404
+
+@app.errorhandler(429)
+def too_many_requests(error):
+    return 'Too Many Requests', 429
+
+@app.errorhandler(500)
+def internal_error(error):
+    logger.exception("500 Internal Server Error: %s", error)
+    return 'Internal Server Error', 500
+
+
+@app.errorhandler(Exception)
+def handle_uncaught_exception(error):
+    """兜底：未捕获异常统一记录并返回 500，避免进程崩溃或暴露堆栈；HTTPException(404/400等)不在此处理"""
+    from werkzeug.exceptions import HTTPException
+    if isinstance(error, HTTPException):
+        return error.get_response()
+    logger.exception("未捕获异常: %s", error)
+    return 'Internal Server Error', 500
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
