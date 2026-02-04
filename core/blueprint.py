@@ -856,11 +856,16 @@ def create_task():
             
             task = Task(title=title, description=description, user_id=current_user.id)
             
-            # 设置组织和共享类型（支持：私有、组织、公开）
+            # 设置组织和共享类型（支持：私有、组织、公开；公开仅认证教师或管理员可用）
             share_scope = request.form.get('share_scope', 'private')
             if share_scope == 'public':
-                task.sharing_type = 'public'
-                task.organization_id = None
+                if current_user.is_admin() or getattr(current_user, 'is_certified', False):
+                    task.sharing_type = 'public'
+                    task.organization_id = None
+                else:
+                    flash('只有通过教师认证的用户才能公开项目到共享区', 'warning')
+                    task.sharing_type = 'private'
+                    task.organization_id = None
             elif share_scope == 'organization' and organization_id and organization_id.strip() and organization_id != 'none':
                 try:
                     org_id = int(organization_id)
@@ -1339,10 +1344,14 @@ def edit_task(task_id):
                 task.file_path = None
                 task.html_review_note = None
             
-            # 可见性/分享类型：公开 或 私有(含组织)
+            # 可见性/分享类型：公开 或 私有(含组织)；公开仅认证教师或管理员可用
             visibility = request.form.get('visibility')
             if visibility == 'public':
-                task.sharing_type = 'public'
+                if current_user.is_admin() or getattr(current_user, 'is_certified', False):
+                    task.sharing_type = 'public'
+                else:
+                    flash('只有通过教师认证的用户才能公开项目到共享区', 'warning')
+                    task.sharing_type = 'organization' if task.organization_id else 'private'
             elif visibility == 'private':
                 task.sharing_type = 'organization' if task.organization_id else 'private'
             

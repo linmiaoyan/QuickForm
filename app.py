@@ -33,15 +33,19 @@ def _get_client_ip():
 
 
 def _clean_old_entries():
+    """清理过期的 404 记录和封禁信息
+
+    注意：调用方必须先获取 _404_lock 再调用本函数，
+    本函数内部不再重复加锁，以避免死锁。
+    """
     now = time.time()
-    with _404_lock:
-        for ip in list(_404_count.keys()):
-            _, start = _404_count[ip]
-            if now - start > RATE_LIMIT_WINDOW:
-                del _404_count[ip]
-        for ip in list(_ban_until.keys()):
-            if _ban_until[ip] < now:
-                del _ban_until[ip]
+    for ip in list(_404_count.keys()):
+        _, start = _404_count[ip]
+        if now - start > RATE_LIMIT_WINDOW:
+            del _404_count[ip]
+    for ip in list(_ban_until.keys()):
+        if _ban_until[ip] < now:
+            del _ban_until[ip]
 
 
 # 创建Flask应用
@@ -119,18 +123,41 @@ def load_user(user_id):
 # 首页重定向
 @app.route('/')
 def index():
+    """根路径：根据登录状态重定向到不同页面，并输出调试日志"""
+    try:
+        logger.info("处理根路径 / ，当前登录状态: %s", current_user.is_authenticated)
+    except Exception:
+        pass
+
     if current_user.is_authenticated:
+        logger.info("用户已登录，重定向到 quickform.dashboard")
         return redirect(url_for('quickform.dashboard'))
+
+    logger.info("用户未登录，重定向到 quickform.index")
     return redirect(url_for('quickform.index'))
+
+
+@app.route('/ping')
+def ping():
+    """简单健康检查路由，用于确认 Flask 能返回内容"""
+    return 'pong', 200
 
 # ---------- 404 限流：请求前检查是否被禁 ----------
 @app.before_request
 def before_request_rate_limit():
     ip = _get_client_ip()
     now = time.time()
+    # 调试日志：记录每一次进入 Flask 的请求（可根据需要注释掉）
+    try:
+        logger.info("收到请求: %s %s 来自 IP %s", request.method, request.path, ip)
+    except Exception:
+        # 不因日志问题影响业务
+        pass
+
     with _404_lock:
         _clean_old_entries()
         if ip in _ban_until and _ban_until[ip] > now:
+            logger.warning("IP %s 命中 404 限流，返回 429", ip)
             return 'Too Many Requests', 429
 
 

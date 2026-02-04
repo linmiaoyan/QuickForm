@@ -148,14 +148,18 @@
                         </div>
                     </div>
                     
-                    <!-- 可见性选择：私有 / 公开（公开会出现在项目交流，所有人可浏览，登录用户可点赞） -->
+                    <!-- 可见性选择：私有 / 公开（公开会出现在项目交流，所有人可浏览，登录用户可点赞；公开仅认证教师或管理员可用） -->
                     <div class="mb-3">
                         <label class="form-label">{{ translate('edit_task.visibility') }}</label>
                         <select class="form-select" name="visibility">
                             <option value="private" {% if task.sharing_type != 'public' %}selected{% endif %}>{{ translate('edit_task.visibility_private') }}</option>
+                            {% if current_user.is_authenticated and (current_user.is_admin() or current_user.is_certified) %}
                             <option value="public" {% if task.sharing_type == 'public' %}selected{% endif %}>{{ translate('edit_task.visibility_public') }}（项目交流）</option>
+                            {% endif %}
                         </select>
-                        <small class="text-muted">选择「公开」后，项目会出现在项目交流页，未注册用户也可查看（无分析和导出）</small>
+                        <small class="text-muted">
+                            只有通过教师认证的用户才能公开项目到共享区。选择「公开」后，项目会出现在项目交流页，未注册用户可查看（无分析和导出）。
+                        </small>
                     </div>
                 </div>
             </div>
