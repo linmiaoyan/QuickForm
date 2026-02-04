@@ -16,19 +16,43 @@
                         <input type="text" class="form-control" id="title" name="title" required placeholder="{{ translate('create_task.task_title_placeholder') }}">
                         <div class="form-text">{{ translate('create_task.task_title_hint') }}</div>
                     </div>
-                    {% if user_organizations and user_organizations|length > 0 %}
                     <div class="mb-4">
-                        <label for="organization_id" class="form-label">
-                            <i class="bi bi-building"></i> 分配到组织（可选）
-                        </label>
-                        <select class="form-select" id="organization_id" name="organization_id">
-                            <option value="none" selected>私有任务（不分配到组织）</option>
-                            {% for org in user_organizations %}
-                            <option value="{{ org.id }}">{{ org.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text">选择组织后，组织成员可以查看、编辑、下载数据、生成报告</div>
+                        <label class="form-label"><i class="bi bi-share"></i> 分享范围</label>
+                        <div class="d-flex flex-wrap gap-3 align-items-center">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="share_scope" id="share_private" value="private" checked>
+                                <label class="form-check-label" for="share_private">私有（仅自己）</label>
+                            </div>
+                            {% if user_organizations and user_organizations|length > 0 %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="share_scope" id="share_organization" value="organization">
+                                <label class="form-check-label" for="share_organization">组织</label>
+                            </div>
+                            <select class="form-select form-select-sm" id="organization_id" name="organization_id" style="width: auto; display: inline-block;" disabled>
+                                <option value="none">请选择组织</option>
+                                {% for org in user_organizations %}
+                                <option value="{{ org.id }}">{{ org.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% endif %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="share_scope" id="share_public" value="public">
+                                <label class="form-check-label" for="share_public">公开（出现在项目交流，所有人可浏览）</label>
+                            </div>
+                        </div>
+                        <div class="form-text">选择「公开」后，项目会出现在项目交流页，未注册用户也可查看（无分析和导出）；登录用户可点赞。</div>
                     </div>
+                    {% if user_organizations and user_organizations|length > 0 %}
+                    <script>
+                    document.querySelectorAll('input[name="share_scope"]').forEach(function(r) {
+                        r.addEventListener('change', function() {
+                            var sel = document.getElementById('organization_id');
+                            sel.disabled = (this.value !== 'organization');
+                            if (this.value === 'organization') sel.removeAttribute('disabled');
+                            else sel.setAttribute('disabled', 'disabled');
+                        });
+                    });
+                    </script>
                     {% endif %}
                     <div class="mb-4">
                         <label for="description" class="form-label">{{ translate('create_task.description') }}</label>

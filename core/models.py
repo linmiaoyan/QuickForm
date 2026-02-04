@@ -1,5 +1,5 @@
 """数据库模型定义和迁移"""
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, inspect, text
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, inspect, text, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin
@@ -86,12 +86,14 @@ class Task(Base):
     color_tag = Column(String(20), nullable=True)  # 任务卡片颜色标签（如 'blue', 'green'）
     # 协作功能字段
     organization_id = Column(Integer, ForeignKey('organization.id'), nullable=True)  # 所属组织
-    sharing_type = Column(String(20), default='private')  # private私有/shared共享/organization组织
+    sharing_type = Column(String(20), default='private')  # private私有/shared共享/organization组织/public公开
+    like_count = Column(Integer, default=0)  # 点赞数（公开项目用）
     # 多HTML文件支持
     html_files = Column(Text)  # JSON格式存储多个HTML文件: [{"name": "file.html", "path": "/path/to/file.html"}, ...]
     approver = relationship('User', foreign_keys=[html_approved_by], backref='approved_tasks')
     organization = relationship('Organization', back_populates='tasks')
     shares = relationship('TaskShare', back_populates='task', cascade='all, delete-orphan')
+    likes = relationship('TaskLike', back_populates='task', cascade='all, delete-orphan')
 
 
 class Submission(Base):
@@ -135,13 +137,27 @@ class CertificationRequest(Base):
 
 
 class Post(Base):
-    """留言板帖子"""
+    """留言板帖子（提问）"""
     __tablename__ = 'post'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.now)
     
+    user = relationship('User', foreign_keys=[user_id])
+    replies = relationship('PostReply', back_populates='post', cascade='all, delete-orphan', order_by='PostReply.created_at')
+
+
+class PostReply(Base):
+    """留言回复（针对某条留言的回答）"""
+    __tablename__ = 'post_reply'
+    id = Column(Integer, primary_key=True)
+    post_id = Column(Integer, ForeignKey('post.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
+    
+    post = relationship('Post', back_populates='replies')
     user = relationship('User', foreign_keys=[user_id])
 
 
@@ -183,6 +199,19 @@ class TaskShare(Base):
     can_edit = Column(Boolean, default=True)  # 是否可编辑
     
     task = relationship('Task', back_populates='shares')
+    user = relationship('User', foreign_keys=[user_id])
+
+
+class TaskLike(Base):
+    """公开任务点赞（仅对 sharing_type=public 的任务）"""
+    __tablename__ = 'task_like'
+    __table_args__ = (UniqueConstraint('task_id', 'user_id', name='uq_task_like_task_user'),)
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('task.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
+    
+    task = relationship('Task', back_populates='likes')
     user = relationship('User', foreign_keys=[user_id])
 
 
@@ -347,6 +376,14 @@ def migrate_database(engine):
                 except Exception as e:
                     logger.warning(f"创建post表失败: {str(e)}")
             
+            # 创建留言回复表
+            if 'post_reply' not in inspector.get_table_names():
+                try:
+                    PostReply.__table__.create(bind=engine)
+                    logger.info("成功创建post_reply表")
+                except Exception as e:
+                    logger.warning(f"创建post_reply表失败: {str(e)}")
+            
             # 创建组织表
             if 'organization' not in inspector.get_table_names():
                 try:
@@ -371,6 +408,14 @@ def migrate_database(engine):
                 except Exception as e:
                     logger.warning(f"创建task_share表失败: {str(e)}")
             
+            # 创建任务点赞表
+            if 'task_like' not in inspector.get_table_names():
+                try:
+                    TaskLike.__table__.create(bind=engine)
+                    logger.info("成功创建task_like表")
+                except Exception as e:
+                    logger.warning(f"创建task_like表失败: {str(e)}")
+            
             # task 新增协作相关字段
             if task_cols and 'organization_id' not in task_cols:
                 try:
@@ -393,5 +438,13 @@ def migrate_database(engine):
                     logger.info("成功为task添加html_files字段")
                 except Exception as e:
                     logger.warning(f"添加html_files失败（可能已存在）: {str(e)}")
+            
+            if task_cols and 'like_count' not in task_cols:
+                try:
+                    conn.execute(text("ALTER TABLE task ADD COLUMN like_count INTEGER DEFAULT 0"))
+                    conn.execute(text("UPDATE task SET like_count = 0 WHERE like_count IS NULL"))
+                    logger.info("成功为task添加like_count字段")
+                except Exception as e:
+                    logger.warning(f"添加like_count失败（可能已存在）: {str(e)}")
     except Exception as e:
         logger.error(f"数据库迁移失败: {str(e)}")

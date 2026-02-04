@@ -4,13 +4,26 @@
 
 {% block content %}
 <style>
+/* 提问（主留言） */
 .post-item {
     background: #ffffff;
     border: 1px solid #e5e7eb;
+    border-left: 4px solid #2563eb;
     border-radius: 8px;
     padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.post-item .post-badge {
+    display: inline-block;
+    background: #2563eb;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    font-weight: 500;
 }
 
 .post-header {
@@ -37,6 +50,59 @@
     line-height: 1.7;
     white-space: pre-wrap;
     word-wrap: break-word;
+}
+
+/* 回答（回复） */
+.post-replies {
+    margin-top: 0.5rem;
+    margin-left: 1rem;
+    padding-left: 1rem;
+    border-left: 2px solid #e5e7eb;
+}
+
+.reply-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #10b981;
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.reply-item .reply-badge {
+    display: inline-block;
+    background: #10b981;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    font-weight: 500;
+}
+
+.reply-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.reply-author { font-weight: 600; color: #065f46; font-size: 0.9rem; }
+.reply-time { font-size: 0.8rem; color: #6b7280; }
+.reply-content {
+    color: #374151;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.95rem;
+}
+
+.reply-form {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f1f5f9;
+    border-radius: 6px;
+    border: 1px dashed #cbd5e1;
 }
 
 .post-actions {
@@ -140,6 +206,54 @@
         <div class="col-12 col-lg-8 mx-auto">
             <h1 class="mb-4">{{ translate('nav.community') if translate('nav.community') != 'nav.community' else '项目交流' }}</h1>
             
+            <!-- 项目展示：公开项目（最新发布、最高点赞） -->
+            <section class="mb-5">
+                <h3 class="mb-3"><i class="bi bi-collection-play"></i> 项目展示</h3>
+                <p class="text-muted mb-3">公开项目所有人可浏览，登录用户可点赞。未注册用户也可点进查看，但无分析和导出功能。</p>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <h5 class="text-secondary mb-2"><i class="bi bi-clock-history"></i> 最新发布</h5>
+                        {% if public_tasks_latest and public_tasks_latest|length > 0 %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for t in public_tasks_latest %}
+                            <a href="{{ url_for('quickform.task_detail', task_id=t.id) }}" class="text-decoration-none">
+                                <div class="card border hover-shadow-sm" style="transition: box-shadow 0.2s;">
+                                    <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
+                                        <span class="text-dark fw-medium text-truncate flex-grow-1">{{ t.title }}</span>
+                                        <span class="text-muted small">{{ t.created_at.strftime('%m-%d') }}</span>
+                                        <span class="badge bg-secondary ms-1"><i class="bi bi-heart"></i> {{ t.like_count or 0 }}</span>
+                                    </div>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted small">暂无公开项目</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="text-secondary mb-2"><i class="bi bi-heart-fill text-danger"></i> 最高点赞</h5>
+                        {% if public_tasks_liked and public_tasks_liked|length > 0 %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for t in public_tasks_liked %}
+                            <a href="{{ url_for('quickform.task_detail', task_id=t.id) }}" class="text-decoration-none">
+                                <div class="card border hover-shadow-sm" style="transition: box-shadow 0.2s;">
+                                    <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
+                                        <span class="text-dark fw-medium text-truncate flex-grow-1">{{ t.title }}</span>
+                                        <span class="badge bg-danger"><i class="bi bi-heart-fill"></i> {{ t.like_count or 0 }}</span>
+                                        <span class="text-muted small ms-1">{{ t.created_at.strftime('%m-%d') }}</span>
+                                    </div>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted small">暂无公开项目</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+            
             <!-- QuickForm问题收集表 -->
             <div class="issue-collector">
                 <div class="issue-collector-content">
@@ -181,13 +295,14 @@
             </div>
             {% endif %}
             
-            <!-- 留言列表 -->
+            <!-- 留言列表（提问 + 回答） -->
             <h3 class="mb-3">留言列表</h3>
             {% if posts and posts|length > 0 %}
                 {% for post in posts %}
                 <div class="post-item">
                     <div class="post-header">
                         <div>
+                            <span class="post-badge">提问</span>
                             <span class="post-author">{{ post.user.username }}</span>
                             {% if post.user.school %}
                                 <span class="text-muted" style="font-size: 0.875rem; margin-left: 0.5rem;">{{ post.user.school }}</span>
@@ -203,6 +318,51 @@
                         </div>
                     </div>
                     <div class="post-content">{{ post.content }}</div>
+                    <!-- 该留言下的回答列表 -->
+                    {% if post.replies and post.replies|length > 0 %}
+                    <div class="post-replies">
+                        {% for reply in post.replies %}
+                        <div class="reply-item">
+                            <div class="reply-header">
+                                <div>
+                                    <span class="reply-badge">回答</span>
+                                    <span class="reply-author">{{ reply.user.username }}</span>
+                                    {% if reply.user.school %}
+                                        <span class="text-muted" style="font-size: 0.8rem; margin-left: 0.25rem;">{{ reply.user.school }}</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <span class="reply-time">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                    {% if current_user.is_admin() %}
+                                    <form method="POST" action="{{ url_for('quickform.delete_reply', reply_id=reply.id) }}" style="display: inline; margin-left: 0.5rem;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这条回复吗？')">删除</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="reply-content">{{ reply.content }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <!-- 回复入口与回复表单（登录用户点击后展开） -->
+                    {% if current_user.is_authenticated %}
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleReplyForm({{ post.id }})">
+                            <i class="bi bi-reply"></i> 回复
+                        </button>
+                    </div>
+                    <div class="reply-form mt-2 d-none" id="reply-form-{{ post.id }}">
+                        <form method="POST" action="{{ url_for('quickform.create_reply', post_id=post.id) }}">
+                            <div class="mb-2">
+                                <label for="reply-content-{{ post.id }}" class="form-label small text-muted">回复这条留言</label>
+                                <textarea class="form-control form-control-sm" id="reply-content-{{ post.id }}" name="content" rows="2" placeholder="写下你的回答..." maxlength="2000" required></textarea>
+                                <small class="text-muted">最多2000字符</small>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-send"></i> 提交回复</button>
+                        </form>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             {% else %}
@@ -214,4 +374,19 @@
         </div>
     </div>
 </div>
+<script>
+    function toggleReplyForm(postId) {
+        var form = document.getElementById('reply-form-' + postId);
+        if (!form) return;
+        if (form.classList.contains('d-none')) {
+            form.classList.remove('d-none');
+            const textarea = form.querySelector('textarea');
+            if (textarea) {
+                textarea.focus();
+            }
+        } else {
+            form.classList.add('d-none');
+        }
+    }
+</script>
 {% endblock %}

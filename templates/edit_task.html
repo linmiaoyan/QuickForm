@@ -148,13 +148,14 @@
                         </div>
                     </div>
                     
-                    <!-- 可见性选择 -->
+                    <!-- 可见性选择：私有 / 公开（公开会出现在项目交流，所有人可浏览，登录用户可点赞） -->
                     <div class="mb-3">
                         <label class="form-label">{{ translate('edit_task.visibility') }}</label>
                         <select class="form-select" name="visibility">
-                            <option value="private" selected>{{ translate('edit_task.visibility_private') }}</option>
-                            <option value="public">{{ translate('edit_task.visibility_public') }}</option>
+                            <option value="private" {% if task.sharing_type != 'public' %}selected{% endif %}>{{ translate('edit_task.visibility_private') }}</option>
+                            <option value="public" {% if task.sharing_type == 'public' %}selected{% endif %}>{{ translate('edit_task.visibility_public') }}（项目交流）</option>
                         </select>
+                        <small class="text-muted">选择「公开」后，项目会出现在项目交流页，未注册用户也可查看（无分析和导出）</small>
                     </div>
                 </div>
             </div>
@@ -187,7 +188,7 @@
                             </div>
                             {% endif %}
                             
-                            <!-- 拖拽上传区域 -->
+                            <!-- 拖拽上传区域（支持多文件，最多10个） -->
                             <div id="html-upload-area-edit" class="html-upload-area" 
                                  style="border: 2px dashed #d1d5db; border-radius: 8px; padding: 30px; text-align: center; background-color: #f9fafb; cursor: pointer; transition: all 0.3s; min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center;"
                                  ondrop="handleDropEdit(event)" 
@@ -330,8 +331,8 @@
         const existingFiles = document.querySelectorAll('#uploaded-files-list .alert:not([style*="opacity: 0.5"])').length || 0;
         const totalFiles = existingFiles + files.length;
         
-        // 限制最多2个文件
-        if (totalFiles > 2) {
+        // 限制最多10个文件
+        if (totalFiles > 10) {
             alert(`{{ translate('js.max_files_exceeded')|replace('{existing}', '${existingFiles}')|replace('{selected}', '${files.length}') }}`);
             e.target.value = ''; // 清空文件选择
             return;

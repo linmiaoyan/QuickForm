@@ -13,7 +13,7 @@ import base64
 import uuid
 from urllib.parse import unquote_plus
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, make_response, send_file, send_from_directory, current_app
-from sqlalchemy import create_engine, or_, text
+from sqlalchemy import create_engine, or_, text, func
 from sqlalchemy.orm import sessionmaker
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
@@ -34,7 +34,7 @@ from email.mime.text import MIMEText
 from email.utils import formataddr
 
 # 导入分离的模块
-from .models import Base, User, Task, Submission, AIConfig, migrate_database, CertificationRequest, Post, Organization, OrganizationMember, TaskShare
+from .models import Base, User, Task, Submission, AIConfig, migrate_database, CertificationRequest, Post, PostReply, Organization, OrganizationMember, TaskShare, TaskLike
 from services.file_service import save_uploaded_file, read_file_content, ALLOWED_EXTENSIONS, allowed_file, CERTIFICATION_ALLOWED_EXTENSIONS
 from services.ai_service import call_ai_model, generate_analysis_prompt, analyze_html_file
 from services.report_service import (
@@ -368,11 +368,32 @@ def cases():
 
 @quickform_bp.route('/community')
 def community():
-    """项目交流 - 留言板"""
+    """项目交流 - 留言板 + 公开项目展示（最新发布、最高点赞）"""
     db = SessionLocal()
     try:
         posts = db.query(Post).order_by(Post.created_at.desc()).all()
-        return render_template('community.html', posts=posts)
+        # 公开项目：最新发布（按创建时间倒序）
+        public_tasks_latest = (
+            db.query(Task)
+            .filter(Task.sharing_type == 'public')
+            .order_by(Task.created_at.desc())
+            .limit(12)
+            .all()
+        )
+        # 公开项目：最高点赞（按 like_count 倒序，再按创建时间；NULL 按 0 处理）
+        public_tasks_liked = (
+            db.query(Task)
+            .filter(Task.sharing_type == 'public')
+            .order_by(func.coalesce(Task.like_count, 0).desc(), Task.created_at.desc())
+            .limit(12)
+            .all()
+        )
+        return render_template(
+            'community.html',
+            posts=posts,
+            public_tasks_latest=public_tasks_latest,
+            public_tasks_liked=public_tasks_liked
+        )
     finally:
         db.close()
 
@@ -407,6 +428,91 @@ def create_post():
         db.close()
     
     return redirect(url_for('quickform.community'))
+
+@quickform_bp.route('/community/post/<int:post_id>/reply', methods=['POST'])
+@login_required
+def create_reply(post_id):
+    """针对某条留言发表回复"""
+    content = request.form.get('content', '').strip()
+    if not content:
+        flash('回复内容不能为空', 'danger')
+        return redirect(url_for('quickform.community'))
+    if len(content) > 2000:
+        flash('回复内容过长，最多2000字符', 'danger')
+        return redirect(url_for('quickform.community'))
+    db = SessionLocal()
+    try:
+        post = db.get(Post, post_id)
+        if not post:
+            flash('该留言不存在', 'danger')
+            return redirect(url_for('quickform.community'))
+        reply = PostReply(
+            post_id=post_id,
+            user_id=current_user.id,
+            content=content,
+            created_at=datetime.now()
+        )
+        db.add(reply)
+        db.commit()
+        flash('回复发布成功', 'success')
+    except Exception as e:
+        db.rollback()
+        logger.error(f"创建回复失败: {str(e)}")
+        flash('回复发布失败', 'danger')
+    finally:
+        db.close()
+    return redirect(url_for('quickform.community'))
+
+@quickform_bp.route('/community/reply/<int:reply_id>/delete', methods=['POST'])
+@login_required
+def delete_reply(reply_id):
+    """删除回复（仅管理员）"""
+    if not current_user.is_admin():
+        flash('无权执行此操作', 'danger')
+        return redirect(url_for('quickform.community'))
+    db = SessionLocal()
+    try:
+        reply = db.get(PostReply, reply_id)
+        if reply:
+            db.delete(reply)
+            db.commit()
+            flash('回复已删除', 'success')
+        else:
+            flash('回复不存在', 'danger')
+    except Exception as e:
+        db.rollback()
+        logger.error(f"删除回复失败: {str(e)}")
+        flash('删除失败', 'danger')
+    finally:
+        db.close()
+    return redirect(url_for('quickform.community'))
+
+@quickform_bp.route('/task/<int:task_id>/like', methods=['POST'])
+@login_required
+def task_like(task_id):
+    """公开任务点赞/取消点赞（仅登录用户，仅对公开任务）"""
+    db = SessionLocal()
+    try:
+        task = db.get(Task, task_id)
+        if not task or task.sharing_type != 'public':
+            return jsonify({'success': False, 'message': '仅支持对公开项目点赞'}), 400
+        existing = db.query(TaskLike).filter_by(task_id=task_id, user_id=current_user.id).first()
+        if existing:
+            db.delete(existing)
+            task.like_count = max(0, (task.like_count or 0) - 1)
+            liked = False
+        else:
+            db.add(TaskLike(task_id=task_id, user_id=current_user.id))
+            task.like_count = (task.like_count or 0) + 1
+            liked = True
+        db.commit()
+        return jsonify({'success': True, 'liked': liked, 'count': task.like_count or 0})
+    except Exception as e:
+        db.rollback()
+        logger.exception(f"点赞操作失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        db.close()
 
 @quickform_bp.route('/community/post/<int:post_id>/delete', methods=['POST'])
 @login_required
@@ -750,16 +856,18 @@ def create_task():
             
             task = Task(title=title, description=description, user_id=current_user.id)
             
-            # 设置组织和共享类型
-            if organization_id and organization_id.strip() and organization_id != 'none':
+            # 设置组织和共享类型（支持：私有、组织、公开）
+            share_scope = request.form.get('share_scope', 'private')
+            if share_scope == 'public':
+                task.sharing_type = 'public'
+                task.organization_id = None
+            elif share_scope == 'organization' and organization_id and organization_id.strip() and organization_id != 'none':
                 try:
                     org_id = int(organization_id)
-                    # 验证用户是否是该组织成员
                     is_member = db.query(OrganizationMember).filter_by(
                         organization_id=org_id,
                         user_id=current_user.id
                     ).first() is not None
-                    
                     org = db.get(Organization, org_id)
                     if org and (is_member or org.creator_id == current_user.id):
                         task.organization_id = org_id
@@ -769,7 +877,23 @@ def create_task():
                 except (ValueError, TypeError):
                     task.sharing_type = 'private'
             else:
-                task.sharing_type = 'private'
+                if organization_id and organization_id.strip() and organization_id != 'none':
+                    try:
+                        org_id = int(organization_id)
+                        is_member = db.query(OrganizationMember).filter_by(
+                            organization_id=org_id,
+                            user_id=current_user.id
+                        ).first() is not None
+                        org = db.get(Organization, org_id)
+                        if org and (is_member or org.creator_id == current_user.id):
+                            task.organization_id = org_id
+                            task.sharing_type = 'organization'
+                        else:
+                            task.sharing_type = 'private'
+                    except (ValueError, TypeError):
+                        task.sharing_type = 'private'
+                else:
+                    task.sharing_type = 'private'
             
             # 优先检查Base64上传（用于公网环境）
             file_content_base64 = request.form.get('file_content_base64')
@@ -879,40 +1003,61 @@ def create_task():
         db.close()
 
 @quickform_bp.route('/task/<int:task_id>')
-@login_required
 def task_detail(task_id):
-    """任务详情"""
+    """任务详情（公开任务支持未登录访问，但不显示分析/导出）"""
     db = SessionLocal()
     try:
         task = db.get(Task, task_id)
         if not task:
             flash('任务不存在', 'danger')
-            return redirect(url_for('quickform.dashboard'))
+            return redirect(url_for('quickform.index'))
         
-        # 权限检查：管理员、任务所有者、组织成员、被共享者可以查看
-        has_access = False
-        if current_user.is_admin() or task.user_id == current_user.id:
+        # 公开任务：任何人可查看（含未登录）
+        if task.sharing_type == 'public':
             has_access = True
-        elif task.organization_id:
-            # 检查是否是组织成员
-            is_org_member = db.query(OrganizationMember).filter_by(
-                organization_id=task.organization_id,
-                user_id=current_user.id
-            ).first() is not None
-            if is_org_member:
-                has_access = True
+            can_analyze_export = False
+            if current_user.is_authenticated:
+                can_analyze_export = (
+                    current_user.is_admin() or
+                    task.user_id == current_user.id or
+                    (task.organization_id and db.query(OrganizationMember).filter_by(
+                        organization_id=task.organization_id,
+                        user_id=current_user.id
+                    ).first() is not None) or
+                    db.query(TaskShare).filter_by(task_id=task.id, user_id=current_user.id).first() is not None
+                )
+            user_liked = False
+            if current_user.is_authenticated:
+                user_liked = db.query(TaskLike).filter_by(
+                    task_id=task.id, user_id=current_user.id
+                ).first() is not None
         else:
-            # 检查是否被共享
-            is_shared = db.query(TaskShare).filter_by(
-                task_id=task.id,
-                user_id=current_user.id
-            ).first() is not None
-            if is_shared:
+            # 非公开任务：必须登录
+            if not current_user.is_authenticated:
+                flash('请先登录后查看', 'info')
+                return redirect(url_for('quickform.login', next=url_for('quickform.task_detail', task_id=task_id)))
+            has_access = False
+            if current_user.is_admin() or task.user_id == current_user.id:
                 has_access = True
-        
-        if not has_access:
-            flash('无权访问此任务', 'danger')
-            return redirect(url_for('quickform.dashboard'))
+            elif task.organization_id:
+                is_org_member = db.query(OrganizationMember).filter_by(
+                    organization_id=task.organization_id,
+                    user_id=current_user.id
+                ).first() is not None
+                if is_org_member:
+                    has_access = True
+            else:
+                is_shared = db.query(TaskShare).filter_by(
+                    task_id=task.id,
+                    user_id=current_user.id
+                ).first() is not None
+                if is_shared:
+                    has_access = True
+            if not has_access:
+                flash('无权访问此任务', 'danger')
+                return redirect(url_for('quickform.dashboard'))
+            can_analyze_export = has_access
+            user_liked = False
         
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
@@ -947,19 +1092,34 @@ def task_detail(task_id):
         except Exception:
             saved_filename = None
 
+        # 多 HTML 文件列表（用于二维码与链接展示）
+        html_files = []
+        if task.html_files:
+            try:
+                html_files = json.loads(task.html_files)
+            except Exception:
+                html_files = []
+        # 兼容旧数据：仅有单文件时也加入列表
+        if task.file_name and saved_filename and not html_files:
+            html_files = [{
+                'original_name': task.file_name,
+                'saved_name': saved_filename
+            }]
+
         pagination = {
             'page': page,
             'per_page': per_page,
             'pages': total_pages
         }
         
-        # 获取用户的组织列表（用于分配任务）
-        user_orgs_created = db.query(Organization).filter_by(creator_id=current_user.id).all()
-        user_orgs_joined = db.query(OrganizationMember).filter_by(user_id=current_user.id).all()
-        user_organizations = user_orgs_created + [m.organization for m in user_orgs_joined if m.organization.id not in [o.id for o in user_orgs_created]]
-        
-        # 获取已共享的用户列表
-        shared_users = db.query(TaskShare).filter_by(task_id=task.id).all()
+        # 仅登录用户需要组织列表与共享列表（用于分配任务/共享管理）
+        user_organizations = []
+        shared_users = []
+        if current_user.is_authenticated:
+            user_orgs_created = db.query(Organization).filter_by(creator_id=current_user.id).all()
+            user_orgs_joined = db.query(OrganizationMember).filter_by(user_id=current_user.id).all()
+            user_organizations = user_orgs_created + [m.organization for m in user_orgs_joined if m.organization.id not in [o.id for o in user_orgs_created]]
+            shared_users = db.query(TaskShare).filter_by(task_id=task.id).all()
 
         return render_template(
             'task_detail.html',
@@ -968,8 +1128,11 @@ def task_detail(task_id):
             total_submissions=total_submissions,
             pagination=pagination,
             saved_filename=saved_filename,
+            html_files=html_files,
             user_organizations=user_organizations,
-            shared_users=shared_users
+            shared_users=shared_users,
+            can_analyze_export=can_analyze_export,
+            user_liked=user_liked
         )
     finally:
         db.close()
@@ -1026,9 +1189,9 @@ def edit_task(task_id):
                     new_files = json.loads(html_files_data)
                     existing_files = json.loads(task.html_files) if task.html_files else []
                     
-                    # 检查文件数量限制（最多2个）
-                    if len(existing_files) + len(new_files) > 2:
-                        flash(f'最多只能上传2个HTML文件！当前已有{len(existing_files)}个，尝试上传{len(new_files)}个', 'danger')
+                    # 检查文件数量限制（最多10个）
+                    if len(existing_files) + len(new_files) > 10:
+                        flash(f'最多只能上传10个HTML文件！当前已有{len(existing_files)}个，尝试上传{len(new_files)}个', 'danger')
                         return redirect(url_for('quickform.edit_task', task_id=task.id))
                     
                     # 保存新文件
@@ -1175,6 +1338,13 @@ def edit_task(task_id):
                 task.file_name = None
                 task.file_path = None
                 task.html_review_note = None
+            
+            # 可见性/分享类型：公开 或 私有(含组织)
+            visibility = request.form.get('visibility')
+            if visibility == 'public':
+                task.sharing_type = 'public'
+            elif visibility == 'private':
+                task.sharing_type = 'organization' if task.organization_id else 'private'
             
             db.commit()
             
