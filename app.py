@@ -1,6 +1,5 @@
-"""QuickForm 独立应用入口"""
+"""QuickForm 独立应用入口（配合 Nginx 反向代理时，Flask 仅提供 HTTP 内网服务，SSL 由 Nginx 终结）"""
 import os
-import ssl
 import time
 import threading
 from flask import Flask, redirect, url_for, request
@@ -49,7 +48,8 @@ def _clean_old_entries():
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key_here')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
-app.config['PREFERRED_URL_SCHEME'] = 'https'  # 统一生成 https 链接
+# 由 Nginx 做 HTTPS 时，仍生成 https 链接（依赖 ProxyFix 传递 X-Forwarded-Proto）
+app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 # 邮件发送配置（用于邮箱验证码）
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.163.com')
@@ -99,6 +99,13 @@ init_quickform(app, login_manager, database_type=DATABASE_TYPE)
 
 # 注册Blueprint
 app.register_blueprint(quickform_bp)
+
+# 反向代理（Nginx）时信任 X-Forwarded-*，使 request.is_secure 与 url_for 正确
+try:
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+except ImportError:
+    pass
 
 # User loader
 @login_manager.user_loader
@@ -197,27 +204,16 @@ def request_entity_too_large(error):
     flash('文件大小超过服务器限制（最大16MB）', 'danger')
     return redirect(url_for('quickform.dashboard'))
 
-def _make_ssl_context():
-    """直接运行 app 时使用的 SSL 上下文。用 gunicorn/反向代理时不需要。"""
-    cert = r"certs\quickform.cn.pem"
-    key = r"certs\quickform.cn.key"
-    try:
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        ctx.load_cert_chain(cert, key)
-        if hasattr(ssl, 'TLSVersion') and hasattr(ctx, 'minimum_version'):
-            ctx.minimum_version = ssl.TLSVersion.TLSv1_2
-        return ctx
-    except Exception:
-        return (cert, key)
-
 
 if __name__ == '__main__':
-    port = int(os.getenv('FLASK_PORT', '443'))
+    # 供 Nginx 反向代理：仅 HTTP，监听本机；端口由环境变量指定，默认 5000
+    host = os.getenv('FLASK_HOST', '127.0.0.1')
+    port = int(os.getenv('FLASK_PORT', '5000'))
+    logger.info("Flask 启动: %s:%s（由 Nginx 转发时请使用此方式）", host, port)
     app.run(
-        host='0.0.0.0',
+        host=host,
         port=port,
         debug=os.getenv('FLASK_DEBUG', 'False').lower() == 'true',
         use_reloader=False,
-        threaded=True,  # 多线程：单请求卡住不会拖死整站，无需额外配 Waitress
-        ssl_context=_make_ssl_context(),
+        threaded=True,
     )

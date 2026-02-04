@@ -41,9 +41,6 @@ Thumbs.db
 *.bak
 *.swp
 
-# 看门狗重启统计（可选保留则不提交）
-watchdog_refresh.json
-
 # 文档（可选，根据需要调整）
 # *.md
 # *.txt
