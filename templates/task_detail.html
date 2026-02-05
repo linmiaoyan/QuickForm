@@ -213,6 +213,27 @@
                     </div>
                 </div>
                 {% endif %}
+
+                <!-- 项目公开范围：在任务详情页直接设置是否公开到项目交流 -->
+                <hr class="my-4">
+                <div class="mt-2">
+                    <form method="POST" action="{{ url_for('quickform.set_task_visibility', task_id=task.id) }}" class="d-flex flex-wrap align-items-center gap-3">
+                        <label class="form-label mb-0"><strong>项目公开范围</strong></label>
+                        <div class="btn-group" role="group" aria-label="项目公开范围">
+                            <input type="radio" class="btn-check" name="visibility" id="vis-private" value="private" {% if task.sharing_type != 'public' %}checked{% endif %}>
+                            <label class="btn btn-outline-secondary" for="vis-private">仅自己 / 组织内部</label>
+
+                            <input type="radio" class="btn-check" name="visibility" id="vis-public" value="public" {% if task.sharing_type == 'public' %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="vis-public">公开到项目交流</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm" style="font-weight: 500;">
+                            保存公开设置
+                        </button>
+                        <small class="text-muted d-block w-100 mt-1" style="font-size: 0.85rem;">
+                            只有通过教师认证的用户或管理员可以将项目公开到项目交流；公开后，所有人都可以在「项目交流」中浏览该项目。
+                        </small>
+                    </form>
+                </div>
                 </div>
             </div>
         </div>

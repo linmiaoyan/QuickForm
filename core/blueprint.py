@@ -1389,6 +1389,65 @@ def edit_task(task_id):
     finally:
         db.close()
 
+
+@quickform_bp.route('/task/<int:task_id>/visibility', methods=['POST'])
+@login_required
+def set_task_visibility(task_id):
+    """在任务详情页修改任务的公开范围（私有 / 公开到项目交流）"""
+    db = SessionLocal()
+    try:
+        task = db.get(Task, task_id)
+        if not task:
+            flash('任务不存在', 'danger')
+            return redirect(url_for('quickform.dashboard'))
+
+        # 权限检查：与编辑任务保持一致
+        has_edit_permission = False
+        if current_user.is_admin() or task.user_id == current_user.id:
+            has_edit_permission = True
+        elif task.organization_id:
+            is_org_member = db.query(OrganizationMember).filter_by(
+                organization_id=task.organization_id,
+                user_id=current_user.id
+            ).first() is not None
+            if is_org_member:
+                has_edit_permission = True
+        else:
+            is_shared = db.query(TaskShare).filter_by(
+                task_id=task.id,
+                user_id=current_user.id
+            ).first() is not None
+            if is_shared:
+                has_edit_permission = True
+
+        if not has_edit_permission:
+            flash('无权修改该任务的公开范围', 'danger')
+            return redirect(url_for('quickform.task_detail', task_id=task.id))
+
+        visibility = request.form.get('visibility', '').strip()
+        message = None
+
+        if visibility == 'public':
+            # 只有管理员或通过教师认证的用户可以公开到项目交流
+            if current_user.is_admin() or getattr(current_user, 'is_certified', False):
+                task.sharing_type = 'public'
+                message = '项目已公开到项目交流。'
+            else:
+                flash('只有通过教师认证的用户才能公开项目到共享区', 'warning')
+                # 回退为私有/组织可见
+                task.sharing_type = 'organization' if task.organization_id else 'private'
+        else:
+            # 设置为仅自己/组织内部可见
+            task.sharing_type = 'organization' if task.organization_id else 'private'
+            message = '项目已设置为仅自己或组织内部可见。'
+
+        db.commit()
+        if message:
+            flash(message, 'success')
+        return redirect(url_for('quickform.task_detail', task_id=task.id))
+    finally:
+        db.close()
+
 @quickform_bp.route('/delete_task/<int:task_id>', methods=['POST'])
 @login_required
 def delete_task(task_id):
