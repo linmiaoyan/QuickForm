@@ -193,6 +193,68 @@
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
 
+/* 常见问题区域样式 */
+.faq-section {
+    padding: 4rem 2rem 5rem;
+    background: #f9fafb;
+}
+
+.faq-container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.faq-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 2rem;
+}
+
+.faq-item {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.faq-button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #111827;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.faq-button:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.faq-icon {
+    margin-left: 1rem;
+    color: #6b7280;
+    transition: transform 0.2s ease;
+}
+
+.faq-button[aria-expanded="true"] .faq-icon {
+    transform: rotate(180deg);
+}
+
+.faq-body {
+    padding-top: 0.5rem;
+    color: #4b5563;
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
 @media (max-width: 768px) {
     .hero-section {
         padding: 4rem 1.5rem 6rem;
@@ -232,6 +294,84 @@
                 <a href="{{ url_for('quickform.register') }}" class="btn btn-primary btn-lg" style="background-color: #2563eb; color: white; border: none;">{{ translate('home.register_now') if translate('home.register_now') != 'home.register_now' else '立即注册' }}</a>
                 <a href="{{ url_for('quickform.login') }}" class="btn btn-outline-primary btn-lg" style="border: 2px solid #2563eb; color: #2563eb; background: transparent;">{{ translate('home.login') if translate('home.login') != 'home.login' else '登录' }}</a>
             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 常见问题区域 -->
+<div class="faq-section">
+    <div class="faq-container">
+        <h2 class="faq-title">常见问题</h2>
+        <div class="accordion" id="homeFaq">
+            <div class="faq-item accordion-item">
+                <h2 class="accordion-header" id="faqHeadingOne">
+                    <button class="faq-button accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseOne" aria-expanded="false" aria-controls="faqCollapseOne">
+                        谁适合使用 QuickForm？
+                        <span class="faq-icon bi bi-chevron-down"></span>
+                    </button>
+                </h2>
+                <div id="faqCollapseOne" class="accordion-collapse collapse" aria-labelledby="faqHeadingOne" data-bs-parent="#homeFaq">
+                    <div class="accordion-body faq-body">
+                        任何需要系统化收集与分析数据的教师、教研员、学生团队和教育管理者都适合使用 QuickForm。无论是课堂小测、课题研究，还是大型问卷与比赛报名，都可以通过 QuickForm 快速搭建表单并自动汇总数据。
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item accordion-item">
+                <h2 class="accordion-header" id="faqHeadingTwo">
+                    <button class="faq-button accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseTwo" aria-expanded="false" aria-controls="faqCollapseTwo">
+                        QuickForm 生成的表单可以和现有系统对接吗？
+                        <span class="faq-icon bi bi-chevron-down"></span>
+                    </button>
+                </h2>
+                <div id="faqCollapseTwo" class="accordion-collapse collapse" aria-labelledby="faqHeadingTwo" data-bs-parent="#homeFaq">
+                    <div class="accordion-body faq-body">
+                        可以。QuickForm 为每个任务提供标准化的 HTTP 接口和数据结构，只要在现有表单或前端页面中将提交地址改为任务的 API 地址，即可无侵入对接。导出的数据也可以直接在 Excel、统计软件或 BI 工具中继续分析。
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item accordion-item">
+                <h2 class="accordion-header" id="faqHeadingThree">
+                    <button class="faq-button accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseThree" aria-expanded="false" aria-controls="faqCollapseThree">
+                        我需要会编程才能使用 QuickForm 吗？
+                        <span class="faq-icon bi bi-chevron-down"></span>
+                    </button>
+                </h2>
+                <div id="faqCollapseThree" class="accordion-collapse collapse" aria-labelledby="faqHeadingThree" data-bs-parent="#homeFaq">
+                    <div class="accordion-body faq-body">
+                        不需要。对于不熟悉编程的老师和同学，可以直接使用现成的 HTML 模板或示例表单，通过复制链接的方式完成部署。对于有一定技术基础的用户，则可以深度定制前端页面，并结合 AI 能力实现更智能的数据处理。
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item accordion-item">
+                <h2 class="accordion-header" id="faqHeadingFour">
+                    <button class="faq-button accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseFour" aria-expanded="false" aria-controls="faqCollapseFour">
+                        教师认证有什么额外权限？
+                        <span class="faq-icon bi bi-chevron-down"></span>
+                    </button>
+                </h2>
+                <div id="faqCollapseFour" class="accordion-collapse collapse" aria-labelledby="faqHeadingFour" data-bs-parent="#homeFaq">
+                    <div class="accordion-body faq-body">
+                        通过教师认证后，您可以创建更多任务、直接公开项目到项目交流区，并在上传 HTML 页面时跳过人工审核流程，更快捷地完成教学活动部署。
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item accordion-item">
+                <h2 class="accordion-header" id="faqHeadingFive">
+                    <button class="faq-button accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseFive" aria-expanded="false" aria-controls="faqCollapseFive">
+                        如何进一步学习 QuickForm 的最佳实践？
+                        <span class="faq-icon bi bi-chevron-down"></span>
+                    </button>
+                </h2>
+                <div id="faqCollapseFive" class="accordion-collapse collapse" aria-labelledby="faqHeadingFive" data-bs-parent="#homeFaq">
+                    <div class="accordion-body faq-body">
+                        您可以查阅顶部导航中的「文档」与「开源教程」，也可以在「项目交流」中浏览其他老师公开的项目案例；若有问题，欢迎通过问题收集表向我们反馈，我们会在后续版本中持续优化。
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

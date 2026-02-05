@@ -6,8 +6,26 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">教师认证申请</h4>
+                {% if pending_request and pending_request.file_path %}
+                {# 右侧显示当前待审核材料的缩略图，便于教师快速查看 #}
+                {% set _ext = (pending_request.file_path|lower).split('.')[-1] if '.' in (pending_request.file_path|lower) else '' %}
+                <div class="d-flex align-items-center gap-2">
+                    {% if _ext in ['jpg', 'jpeg', 'png', 'gif', 'webp'] %}
+                    <a href="{{ url_for('quickform.user_view_certification_file', request_id=pending_request.id) }}"
+                       target="_blank"
+                       class="d-inline-block text-decoration-none">
+                        <img src="{{ url_for('quickform.user_view_certification_file', request_id=pending_request.id) }}"
+                             alt="认证材料预览"
+                             class="rounded border bg-white"
+                             style="max-width: 64px; max-height: 64px; object-fit: cover;">
+                    </a>
+                    {% else %}
+                    <i class="bi bi-file-earmark-pdf-fill fs-4"></i>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
             <div class="card-body">
                 {% if user.is_certified %}
@@ -15,8 +33,15 @@
                         <strong>您已完成教师认证！</strong> 系统已为您开放无限制的任务创建权限，后续上传的 HTML 页面将自动通过审核。
                     </div>
                 {% elif pending_request %}
-                    <div class="alert alert-warning">
-                        <strong>认证申请审核中。</strong> 我们已收到您 {{ pending_request.created_at.strftime('%Y-%m-%d %H:%M') }} 提交的认证申请，管理员正在审核，请耐心等待结果。
+                    <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <strong>认证申请审核中。</strong> 我们已收到您 {{ pending_request.created_at.strftime('%Y-%m-%d %H:%M') }} 提交的认证申请，管理员正在审核，请耐心等待结果。
+                        </div>
+                        <a href="{{ url_for('quickform.user_view_certification_file', request_id=pending_request.id) }}"
+                           target="_blank"
+                           class="btn btn-sm btn-outline-light">
+                            查看当前材料
+                        </a>
                     </div>
                 {% else %}
                     <div class="alert alert-info">

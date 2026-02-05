@@ -122,7 +122,12 @@ def send_email_code(to_email: str, code: str):
                     server.starttls()
                     server.ehlo()
 
-            server.login(conf['MAIL_USERNAME'], conf['MAIL_PASSWORD'])
+            try:
+                server.login(conf['MAIL_USERNAME'], conf['MAIL_PASSWORD'])
+            except smtplib.SMTPAuthenticationError as auth_err:
+                # 针对 535 等认证错误给出更友好的提示，避免将底层错误直接暴露给前端
+                logger.error(f"邮箱服务器认证失败，请检查 MAIL_USERNAME / MAIL_PASSWORD 是否为正确的邮箱账号及 SMTP 授权码: {auth_err}")
+                raise RuntimeError("邮箱服务器认证失败，请联系管理员检查邮箱账号或授权码配置。")
             server.sendmail(sender, [to_email], msg.as_string())
         finally:
             if server is not None:
@@ -133,6 +138,7 @@ def send_email_code(to_email: str, code: str):
 
         logger.info(f"验证码邮件已发送至: {to_email}")
     except Exception as e:
+        # 统一在此处记录详细日志，但对外抛出简单错误信息，避免暴露内部实现细节
         logger.exception(f"发送邮箱验证码失败: {e}")
         raise
 
@@ -306,10 +312,7 @@ def admin_required(f):
 # 路由函数
 @quickform_bp.route('/')
 def index():
-    """QuickForm首页"""
-    if current_user.is_authenticated:
-        return redirect(url_for('quickform.dashboard'))
-    
+    """QuickForm首页（无论是否登录都展示统一首页）"""
     # 获取videos目录下的所有视频文件
     videos_dir = os.path.join(current_app.static_folder, 'videos')
     video_files = []
@@ -1468,10 +1471,12 @@ def api_send_email_code():
 
         return jsonify({'success': True, 'message': '验证码已发送到邮箱，有效期10分钟'})
     except Exception as e:
+        # 这里捕获 send_email_code 抛出的 RuntimeError 等，给前端返回友好的提示信息
         logger.exception("发送邮箱验证码异常")
+        safe_message = str(e) if isinstance(e, RuntimeError) else '服务器内部错误，请稍后重试或联系管理员。'
         return jsonify({
             'success': False,
-            'message': f'服务器错误: {str(e)}'
+            'message': safe_message
         }), 500
 
 SUBMIT_RATE_LIMIT_WINDOW = 10  # seconds
@@ -1818,6 +1823,26 @@ def profile():
         last_cert_request = db.query(CertificationRequest).filter_by(user_id=current_user.id).order_by(CertificationRequest.created_at.desc()).first()
         
         if request.method == 'POST':
+            # 恢复默认 AI 配置（使用系统内置配置）
+            if 'reset_config' in request.form:
+                if not ai_config:
+                    ai_config = AIConfig(user_id=current_user.id)
+                    db.add(ai_config)
+                    db.flush()
+
+                # 默认使用 chat_server，清空所有自定义 Key / URL
+                ai_config.selected_model = 'chat_server'
+                ai_config.chat_server_api_url = None
+                ai_config.chat_server_api_token = None
+                ai_config.deepseek_api_key = None
+                ai_config.doubao_api_key = None
+                ai_config.doubao_secret_key = None
+                ai_config.qwen_api_key = None
+
+                db.commit()
+                flash('已恢复到系统默认的 AI 配置。', 'success')
+
+            # 更新 AI 配置
             if 'selected_model' in request.form:
                 selected_model = request.form.get('selected_model')
                 deepseek_api_key = request.form.get('deepseek_api_key', '')
@@ -1964,6 +1989,34 @@ def certification_request():
             return redirect(url_for('quickform.profile'))
 
         return render_template('certification_request.html', user=user, requests=requests, pending_request=pending_request)
+    finally:
+        db.close()
+
+
+@quickform_bp.route('/certification/file/<int:request_id>')
+@login_required
+def user_view_certification_file(request_id):
+    """
+    教师查看自己提交的认证材料（图片或 PDF）。
+    仅限提交该申请的用户或管理员访问。
+    """
+    db = SessionLocal()
+    try:
+        cert_request = db.get(CertificationRequest, request_id)
+        if not cert_request:
+            flash('认证申请不存在', 'danger')
+            return redirect(request.referrer or url_for('quickform.certification_request'))
+
+        if (cert_request.user_id != current_user.id) and (not current_user.is_admin()):
+            flash('无权查看该认证材料', 'danger')
+            return redirect(request.referrer or url_for('quickform.certification_request'))
+
+        if not cert_request.file_path or not os.path.exists(cert_request.file_path):
+            flash('认证材料文件不存在', 'danger')
+            return redirect(request.referrer or url_for('quickform.certification_request'))
+
+        directory, filename = os.path.split(cert_request.file_path)
+        return send_from_directory(directory, filename)
     finally:
         db.close()
 

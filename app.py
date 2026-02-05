@@ -149,7 +149,7 @@ def before_request_rate_limit():
     now = time.time()
     # 调试日志：记录每一次进入 Flask 的请求（可根据需要注释掉）
     try:
-        logger.info("收到请求: %s %s 来自 IP %s", request.method, request.path, ip)
+        pass#logger.info("收到请求: %s %s 来自 IP %s", request.method, request.path, ip)
     except Exception:
         # 不因日志问题影响业务
         pass
