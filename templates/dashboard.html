@@ -70,6 +70,10 @@
                             <span class="badge" style="background-color: #10b981; font-size: 0.75rem;">
                                 <i class="bi bi-share-fill"></i> {{ translate('task_detail.shared') }}
                             </span>
+                            {% elif task.sharing_type == 'public' %}
+                            <span class="badge" style="background-color: #f59e0b; color: white; font-size: 0.75rem;">
+                                <i class="bi bi-globe"></i> 公开
+                            </span>
                             {% else %}
                             <span class="badge" style="background-color: #93c5fd; color: #1e40af; font-size: 0.75rem;">
                                 <i class="bi bi-lock-fill"></i> {{ translate('task_detail.private') }}
