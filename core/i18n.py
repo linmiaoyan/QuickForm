@@ -276,7 +276,7 @@ TRANSLATIONS = {
         'task_detail.simple_prompt_text': '创建完应用后，向',
         'task_detail.simple_prompt_send': '发送post格式的json数据',
         'task_detail.copy': '复制',
-        'task_detail.data_query_tip': '数据查询功能：直接访问上面的URL就能看到已收集的数据，可以用它继续制作实时反馈排名页面。',
+        'task_detail.data_query_tip': '访问下方 URL 可查看已收集的数据；制作实时统计页面时，需向大模型提供该 URL 及数据样例。',
         'task_detail.full_prompt_label': '完整版提示词：',
         'task_detail.expand_collapse': '展开/收起',
         

@@ -424,12 +424,8 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="https://quickform.readthedocs.io/" target="_blank">{{ translate('nav.docs') }}</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('quickform.tutorials') }}">{{ translate('nav.tutorials') }}</a>
                     </li>
-                    {# “精品案例”栏目暂时下线，隐藏菜单入口 #}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('quickform.community') }}">{{ translate('nav.community') }}</a>
                     </li>
@@ -509,7 +505,13 @@
     <!-- 页脚 -->
     <footer class="footer">
         <div class="container text-center">
-            <p>&copy; {{ current_year }} QuickForm. {{ translate('base.footer') }}.</p>
+            <p class="mb-2">QuickForm：打通AI赋能教育的"最后一公里"</p>
+            <p class="mb-2 small">
+                <a href="https://quickform.readthedocs.io/" target="_blank" rel="noopener" class="text-decoration-none me-3">官方文档</a>
+                <a href="https://github.com/QuickForm-Project/QuickForm" target="_blank" rel="noopener" class="text-decoration-none me-3">GitHub</a>
+                <a href="{{ url_for('quickform.index') }}#about" class="text-decoration-none me-3">关于我们</a>
+            </p>
+            <p class="mb-0 small text-muted">联系我们：QuickForm小助手 微信号 / 邮箱 <a href="mailto:xiezuoru@vip.qq.com">xiezuoru@vip.qq.com</a></p>
         </div>
     </footer>
 

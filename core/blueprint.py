@@ -7,6 +7,8 @@ import json
 import math
 import random
 import re
+import secrets
+import string
 import threading
 import html
 import base64
@@ -375,18 +377,17 @@ def community():
     db = SessionLocal()
     try:
         posts = db.query(Post).order_by(Post.created_at.desc()).all()
-        # 公开项目：最新发布（按创建时间倒序）
+        # 公开项目：仅展示管理员审核通过的（public_approved==1）
         public_tasks_latest = (
             db.query(Task)
-            .filter(Task.sharing_type == 'public')
+            .filter(Task.sharing_type == 'public', Task.public_approved == 1)
             .order_by(Task.created_at.desc())
             .limit(12)
             .all()
         )
-        # 公开项目：最高点赞（按 like_count 倒序，再按创建时间；NULL 按 0 处理）
         public_tasks_liked = (
             db.query(Task)
-            .filter(Task.sharing_type == 'public')
+            .filter(Task.sharing_type == 'public', Task.public_approved == 1)
             .order_by(func.coalesce(Task.like_count, 0).desc(), Task.created_at.desc())
             .limit(12)
             .all()
@@ -1129,6 +1130,9 @@ def task_detail(task_id):
             user_organizations = user_orgs_created + [m.organization for m in user_orgs_joined if m.organization.id not in [o.id for o in user_orgs_created]]
             shared_users = db.query(TaskShare).filter_by(task_id=task.id).all()
 
+        # 公开项目且当前用户非所有者/管理员等：仅展示任务名称、简介、网页（不展示数据与导出等）
+        is_public_visitor = (task.sharing_type == 'public' and not can_analyze_export)
+
         return render_template(
             'task_detail.html',
             task=task,
@@ -1140,7 +1144,8 @@ def task_detail(task_id):
             user_organizations=user_organizations,
             shared_users=shared_users,
             can_analyze_export=can_analyze_export,
-            user_liked=user_liked
+            user_liked=user_liked,
+            is_public_visitor=is_public_visitor
         )
     finally:
         db.close()
@@ -1428,10 +1433,11 @@ def set_task_visibility(task_id):
         message = None
 
         if visibility == 'public':
-            # 只有管理员或通过教师认证的用户可以公开到项目交流
+            # 只有管理员或通过教师认证的用户可以公开到项目交流；公开后需管理员审核通过才会在项目交流展示
             if current_user.is_admin() or getattr(current_user, 'is_certified', False):
                 task.sharing_type = 'public'
-                message = '项目已公开到项目交流。'
+                task.public_approved = 0  # 待管理员审核
+                message = '已申请公开到项目交流，审核通过后将展示在项目交流页。'
             else:
                 flash('只有通过教师认证的用户才能公开项目到共享区', 'warning')
                 # 回退为私有/组织可见
@@ -1439,6 +1445,7 @@ def set_task_visibility(task_id):
         else:
             # 设置为仅自己/组织内部可见
             task.sharing_type = 'organization' if task.organization_id else 'private'
+            task.public_approved = 0
             message = '项目已设置为仅自己或组织内部可见。'
 
         db.commit()
@@ -2680,6 +2687,15 @@ def admin_panel():
             'tasks_with_reports': tasks_with_reports,
             'report_generation_rate': report_generation_rate
         }
+
+        # 项目公开审核：sharing_type=public 且 public_approved=0
+        public_pending_tasks = (
+            db.query(Task)
+            .filter(Task.sharing_type == 'public', Task.public_approved == 0)
+            .order_by(Task.created_at.desc())
+            .all()
+        )
+        public_pending_with_author = [{'task': t, 'author': db.get(User, t.user_id)} for t in public_pending_tasks]
         
         return render_template(
             'admin.html',
@@ -2707,10 +2723,48 @@ def admin_panel():
             cert_review_pages=cert_review_total_pages,
             cert_review_total=total_cert_requests,
             cert_review_per_page=cert_review_per_page,
-            current_tab=current_tab
+            current_tab=current_tab,
+            public_pending_with_author=public_pending_with_author
         )
     finally:
         db.close()
+
+
+@quickform_bp.route('/admin/public_approve/<int:task_id>', methods=['POST'])
+@admin_required
+def admin_public_approve(task_id):
+    """管理员通过项目公开申请"""
+    db = SessionLocal()
+    try:
+        task = db.get(Task, task_id)
+        if not task or task.sharing_type != 'public' or task.public_approved != 0:
+            flash('任务不存在或无需审核', 'warning')
+            return redirect(url_for('quickform.admin_panel', tab='public-review'))
+        task.public_approved = 1
+        db.commit()
+        flash(f'已通过项目「{task.title}」的公开申请，将展示在项目交流页。', 'success')
+    finally:
+        db.close()
+    return redirect(url_for('quickform.admin_panel', tab='public-review'))
+
+
+@quickform_bp.route('/admin/public_reject/<int:task_id>', methods=['POST'])
+@admin_required
+def admin_public_reject(task_id):
+    """管理员拒绝项目公开申请"""
+    db = SessionLocal()
+    try:
+        task = db.get(Task, task_id)
+        if not task or task.sharing_type != 'public' or task.public_approved != 0:
+            flash('任务不存在或无需审核', 'warning')
+            return redirect(url_for('quickform.admin_panel', tab='public-review'))
+        task.public_approved = -1
+        db.commit()
+        flash(f'已拒绝项目「{task.title}」的公开申请。', 'success')
+    finally:
+        db.close()
+    return redirect(url_for('quickform.admin_panel', tab='public-review'))
+
 
 @quickform_bp.route('/admin/change_role/<int:user_id>', methods=['POST'])
 @admin_required
@@ -3682,12 +3736,25 @@ def create_organization():
         if not name:
             flash('组织名称不能为空', 'danger')
             return redirect(url_for('quickform.organization'))
-        
+
+        # 生成五位大写字母数字组织代码（保证唯一）
+        def _gen_org_code():
+            chars = string.ascii_uppercase + string.digits
+            return ''.join(secrets.choice(chars) for _ in range(5))
+        for _ in range(20):
+            org_code = _gen_org_code()
+            if db.query(Organization).filter_by(org_code=org_code).first() is None:
+                break
+        else:
+            flash('生成组织代码失败，请稍后重试', 'danger')
+            return redirect(url_for('quickform.organization'))
+
         # 创建组织
         org = Organization(
             name=name,
             description=description if description else None,
-            creator_id=current_user.id
+            creator_id=current_user.id,
+            org_code=org_code
         )
         db.add(org)
         db.flush()  # 获取org.id

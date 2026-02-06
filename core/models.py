@@ -6,6 +6,7 @@ from flask_login import UserMixin
 from datetime import datetime
 import uuid
 import secrets
+import string
 import logging
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,7 @@ class Task(Base):
     # 协作功能字段
     organization_id = Column(Integer, ForeignKey('organization.id'), nullable=True)  # 所属组织
     sharing_type = Column(String(20), default='private')  # private私有/shared共享/organization组织/public公开
+    public_approved = Column(Integer, default=0)  # 项目公开审核：0=待审核 1=已通过 -1=已拒绝，仅当 sharing_type=public 时生效
     like_count = Column(Integer, default=0)  # 点赞数（公开项目用）
     # 多HTML文件支持
     html_files = Column(Text)  # JSON格式存储多个HTML文件: [{"name": "file.html", "path": "/path/to/file.html"}, ...]
@@ -167,7 +169,7 @@ class Organization(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
     description = Column(Text)
-    org_code = Column(String(50), unique=True, nullable=False, default=lambda: secrets.token_urlsafe(8))  # 组织代码
+    org_code = Column(String(50), unique=True, nullable=False)  # 组织代码，五位大写字母数字，由创建时生成
     creator_id = Column(Integer, ForeignKey('user.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.now)
     
@@ -446,5 +448,13 @@ def migrate_database(engine):
                     logger.info("成功为task添加like_count字段")
                 except Exception as e:
                     logger.warning(f"添加like_count失败（可能已存在）: {str(e)}")
+
+            if task_cols and 'public_approved' not in task_cols:
+                try:
+                    conn.execute(text("ALTER TABLE task ADD COLUMN public_approved INTEGER DEFAULT 0"))
+                    conn.execute(text("UPDATE task SET public_approved = 1 WHERE sharing_type = 'public' AND (public_approved IS NULL OR public_approved = 0)"))
+                    logger.info("成功为task添加public_approved字段")
+                except Exception as e:
+                    logger.warning(f"添加public_approved失败（可能已存在）: {str(e)}")
     except Exception as e:
         logger.error(f"数据库迁移失败: {str(e)}")
